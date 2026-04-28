@@ -7,7 +7,13 @@ const cards = require("./cards.json");
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: "*" },
+  cors: {
+    origin: [
+      "http://localhost:3000",
+      "https://bmc-frontend-xxxx.vercel.app", // ← votre vraie URL Vercel
+    ],
+    methods: ["GET", "POST"],
+  },
 });
 
 const ROOM_CLEANUP_DELAY = 5 * 60 * 1000;
