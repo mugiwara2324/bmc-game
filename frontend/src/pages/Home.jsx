@@ -7,31 +7,57 @@ export default function Home({ onJoined }) {
   const [code, setCode] = useState("");
   const [maxScore, setMaxScore] = useState(10);
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const openMode = (nextMode) => {
     setMode(nextMode);
     setError("");
   };
 
-  const handleCreate = () => {
-    if (!name.trim()) return setError("Entre ton pseudo !");
-    socket.emit("create_room", { name: name.trim(), maxScore }, (res) => {
-      if (res.error) return setError(res.error);
+  const submitRequest = (eventName, payload) => {
+    if (isSubmitting) return;
+
+    setError("");
+    setIsSubmitting(true);
+
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    socket.timeout(5000).emit(eventName, payload, (err, res) => {
+      setIsSubmitting(false);
+
+      if (err) {
+        setError("Impossible de joindre le serveur. Réessaie dans un instant.");
+        return;
+      }
+
+      if (!res) {
+        setError("Le serveur n'a pas répondu.");
+        return;
+      }
+
+      if (res.error) {
+        setError(res.error);
+        return;
+      }
+
       onJoined({ code: res.code, player: res.player, room: res.room });
     });
+  };
+
+  const handleCreate = () => {
+    if (!name.trim()) return setError("Entre ton pseudo !");
+    submitRequest("create_room", { name: name.trim(), maxScore });
   };
 
   const handleJoin = () => {
     if (!name.trim()) return setError("Entre ton pseudo !");
     if (!code.trim()) return setError("Entre le code de la partie !");
-    socket.emit(
-      "join_room",
-      { name: name.trim(), code: code.toUpperCase().trim() },
-      (res) => {
-        if (res.error) return setError(res.error);
-        onJoined({ code: res.code, player: res.player, room: res.room });
-      },
-    );
+    submitRequest("join_room", {
+      name: name.trim(),
+      code: code.toUpperCase().trim(),
+    });
   };
 
   return (
@@ -76,7 +102,10 @@ export default function Home({ onJoined }) {
             className="input"
             placeholder="Ex : Julien"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value);
+              if (error) setError("");
+            }}
           />
           <label>Score pour gagner</label>
           <div className="score-selector">
@@ -86,6 +115,7 @@ export default function Home({ onJoined }) {
                 type="button"
                 className={`score-btn ${maxScore === n ? "active" : ""}`}
                 onClick={() => setMaxScore(n)}
+                disabled={isSubmitting}
               >
                 {n} pts
               </button>
@@ -103,8 +133,13 @@ export default function Home({ onJoined }) {
             >
               Retour
             </button>
-            <button type="button" className="btn btn-primary" onClick={handleCreate}>
-              Créer →
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleCreate}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Création..." : "Créer →"}
             </button>
           </div>
         </div>
@@ -118,14 +153,20 @@ export default function Home({ onJoined }) {
             className="input"
             placeholder="Ex : Sophie"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value);
+              if (error) setError("");
+            }}
           />
           <label>Code de la partie</label>
           <input
             className="input input-code"
             placeholder="Ex : AB3XY"
             value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            onChange={(e) => {
+              setCode(e.target.value.toUpperCase());
+              if (error) setError("");
+            }}
             maxLength={5}
           />
           {error && <p className="error">{error}</p>}
@@ -140,8 +181,13 @@ export default function Home({ onJoined }) {
             >
               Retour
             </button>
-            <button type="button" className="btn btn-primary" onClick={handleJoin}>
-              Rejoindre →
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleJoin}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Connexion..." : "Rejoindre →"}
             </button>
           </div>
         </div>

@@ -775,11 +775,6 @@ input {
     gap: 18px;
   }
 
-  .home-screen {
-    justify-content: flex-start;
-    padding-top: 32px;
-  }
-
   .btn-inline {
     width: 100%;
   }
