@@ -32,7 +32,15 @@ export default function Home({ onJoined }) {
   return (
     <div className="screen home-screen">
       <div className="home-header">
-        <h1 className="home-title">🃏 Noir Manger Coco 🃏</h1>
+        <h1 className="home-title">
+          <span className="home-title-icon" aria-hidden="true">
+            🃏
+          </span>
+          <span className="home-title-text">Noir Manger Coco</span>
+          <span className="home-title-icon" aria-hidden="true">
+            🃏
+          </span>
+        </h1>
         <p className="home-subtitle">Le jeu de cartes entre amis</p>
       </div>
 
