@@ -8,6 +8,11 @@ export default function Home({ onJoined }) {
   const [maxScore, setMaxScore] = useState(10);
   const [error, setError] = useState("");
 
+  const openMode = (nextMode) => {
+    setMode(nextMode);
+    setError("");
+  };
+
   const handleCreate = () => {
     if (!name.trim()) return setError("Entre ton pseudo !");
     socket.emit("create_room", { name: name.trim(), maxScore }, (res) => {
@@ -46,10 +51,18 @@ export default function Home({ onJoined }) {
 
       {!mode && (
         <div className="home-buttons">
-          <button className="btn btn-primary" onClick={() => setMode("create")}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => openMode("create")}
+          >
             Créer une partie
           </button>
-          <button className="btn btn-secondary" onClick={() => setMode("join")}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => openMode("join")}
+          >
             Rejoindre une partie
           </button>
         </div>
@@ -70,6 +83,7 @@ export default function Home({ onJoined }) {
             {[5, 7, 10, 15].map((n) => (
               <button
                 key={n}
+                type="button"
                 className={`score-btn ${maxScore === n ? "active" : ""}`}
                 onClick={() => setMaxScore(n)}
               >
@@ -80,6 +94,7 @@ export default function Home({ onJoined }) {
           {error && <p className="error">{error}</p>}
           <div className="form-actions">
             <button
+              type="button"
               className="btn btn-ghost"
               onClick={() => {
                 setMode(null);
@@ -88,7 +103,7 @@ export default function Home({ onJoined }) {
             >
               Retour
             </button>
-            <button className="btn btn-primary" onClick={handleCreate}>
+            <button type="button" className="btn btn-primary" onClick={handleCreate}>
               Créer →
             </button>
           </div>
@@ -116,6 +131,7 @@ export default function Home({ onJoined }) {
           {error && <p className="error">{error}</p>}
           <div className="form-actions">
             <button
+              type="button"
               className="btn btn-ghost"
               onClick={() => {
                 setMode(null);
@@ -124,7 +140,7 @@ export default function Home({ onJoined }) {
             >
               Retour
             </button>
-            <button className="btn btn-primary" onClick={handleJoin}>
+            <button type="button" className="btn btn-primary" onClick={handleJoin}>
               Rejoindre →
             </button>
           </div>
