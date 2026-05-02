@@ -10,7 +10,7 @@ const io = new Server(server, {
   cors: {
     origin: [
       "http://localhost:3000",
-      "https://bmc-frontend-mocha.vercel.app", // ← votre vraie URL Vercel
+      "https://game-gourmands.vercel.app", // ← votre vraie URL Vercel
     ],
     methods: ["GET", "POST"],
   },
