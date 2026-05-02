@@ -7,7 +7,7 @@ import GameOver from "./pages/GameOver";
 import "./App.css";
 
 const SESSION_STORAGE_KEY = "bmc-game-session";
-const RESTORE_TIMEOUT_MS = 3000;
+const RESTORE_TIMEOUT_MS = 8000;
 
 function isValidSession(session) {
   return Boolean(
@@ -183,8 +183,17 @@ export default function App() {
       handleConnect();
     }
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && !socket.connected) {
+        socket.connect();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
       stopRestoring();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       socket.off("connect", handleConnect);
       socket.off("connect_error", handleConnectError);
       socket.off("room_update", handleRoomUpdate);
