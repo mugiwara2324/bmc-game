@@ -502,6 +502,32 @@ io.on("connection", (socket) => {
     });
   });
 
+  socket.on("replay_game", () => {
+    const code = socket.data.code;
+    const playerId = socket.data.playerId;
+    const room = rooms[code];
+
+    if (!room || room.host !== playerId || room.phase !== "scores") return;
+
+    Object.values(room.players).forEach((p) => {
+      p.score = 0;
+      p.hand = dealCards(10);
+      p.playedCard = null;
+    });
+
+    room.questionDeck = buildQuestionDeck();
+    room.questionIndex = 0;
+    room.currentQuestion = null;
+    room.lastRound = null;
+    room.winnerName = null;
+    room.finalResults = null;
+    room.votes = {};
+    room.revealedCards = [];
+    room.phase = "lobby";
+
+    emitRoomUpdate(room);
+  });
+
   socket.on("disconnect", () => {
     const code = socket.data.code;
     const playerId = socket.data.playerId;

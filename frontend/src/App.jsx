@@ -12,10 +12,10 @@ const RESTORE_TIMEOUT_MS = 3000;
 function isValidSession(session) {
   return Boolean(
     session &&
-      typeof session.code === "string" &&
-      session.code.trim() &&
-      typeof session.playerId === "string" &&
-      session.playerId.trim(),
+    typeof session.code === "string" &&
+    session.code.trim() &&
+    typeof session.playerId === "string" &&
+    session.playerId.trim(),
   );
 }
 
@@ -78,7 +78,9 @@ export default function App() {
   const [myData, setMyData] = useState(null); // { id, name, hand }
   const [winner, setWinner] = useState(null);
   const [finalResults, setFinalResults] = useState(null);
-  const [isRestoringSession, setIsRestoringSession] = useState(() => !!loadSession());
+  const [isRestoringSession, setIsRestoringSession] = useState(
+    () => !!loadSession(),
+  );
 
   useEffect(() => {
     let restoreTimeout = null;
@@ -137,7 +139,9 @@ export default function App() {
       setRoomData(room);
 
       if (session?.playerId) {
-        const me = room.players.find((player) => player.id === session.playerId);
+        const me = room.players.find(
+          (player) => player.id === session.playerId,
+        );
         if (me?.hand) {
           setMyData((prev) => ({
             id: me.id,
@@ -191,14 +195,22 @@ export default function App() {
   useEffect(() => {
     if (!roomData) return;
 
-    if (roomData.phase === "scores" && roomData.winnerName && roomData.finalResults) {
+    if (
+      roomData.phase === "scores" &&
+      roomData.winnerName &&
+      roomData.finalResults
+    ) {
       setWinner(roomData.winnerName);
       setFinalResults(roomData.finalResults);
     }
   }, [roomData]);
 
   const handleRoomJoined = ({ code, player, room }) => {
-    saveSession({ code, playerId: player.id, lastPhase: room?.phase || "lobby" });
+    saveSession({
+      code,
+      playerId: player.id,
+      lastPhase: room?.phase || "lobby",
+    });
     setRoomData(room || null);
     setMyData(player);
     setWinner(null);
@@ -309,7 +321,9 @@ export default function App() {
         <GameOver
           winner={winner}
           results={finalResults}
-          onRestart={leaveCurrentRoom}
+          room={roomData}
+          myId={myData?.id}
+          onQuit={leaveCurrentRoom}
         />
       )}
     </div>

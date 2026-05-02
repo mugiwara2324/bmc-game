@@ -1,5 +1,10 @@
-export default function GameOver({ winner, results, onRestart }) {
+import { socket } from "../Socket";
+
+export default function GameOver({ winner, results, room, myId, onQuit }) {
   const sorted = [...(results || [])].sort((a, b) => b.score - a.score);
+  const isHost = room.host === myId;
+
+  const handleReplay = () => socket.emit("replay_game");
 
   return (
     <div className="screen gameover-screen">
@@ -21,9 +26,21 @@ export default function GameOver({ winner, results, onRestart }) {
         ))}
       </div>
 
-      <button className="btn btn-primary btn-large" onClick={onRestart}>
+      <div className="gameover-actions">
+        {isHost ? (
+          <button className="btn btn-primary btn-large" onClick={handleReplay}>
+            🔄 Rejouer
+          </button>
+        ) : (
+          <p className="muted">En attente que l'hôte relance une partie…</p>
+        )}
+        <button className="btn btn-ghost btn-large" onClick={onQuit}>
+          🚪 Quitter
+        </button>
+      </div>
+      {/* <button className="btn btn-primary btn-large" onClick={onRestart}>
         Rejouer
-      </button>
+      </button> */}
     </div>
   );
 }
