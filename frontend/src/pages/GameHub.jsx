@@ -5,7 +5,8 @@ const games = [
     id: "noir-manger-coco",
     title: "Noir Manger Coco",
     subtitle: "La meilleur version du jeu Blanc Manger Coco",
-    description: "Questions noires, reponses absurdes, parties entre amis.",
+    description:
+      "Questions noires, reponses absurdes, un jeu pour rigoler entre amis.",
     badge: "Disponible",
   },
 ];
