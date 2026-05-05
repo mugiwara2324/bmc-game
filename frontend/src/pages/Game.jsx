@@ -100,7 +100,7 @@ export default function Game({ room, myId, myData, onLeave }) {
 
   return (
     <div className="screen game-screen">
-      <div className="screen-actions">
+      <div className="screen-actions screen-actions-left">
         <button className="btn btn-ghost btn-inline" onClick={onLeave}>
           Quitter la partie
         </button>

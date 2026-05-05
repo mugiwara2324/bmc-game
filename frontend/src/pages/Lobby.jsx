@@ -23,7 +23,7 @@ export default function Lobby({ room, myId, onLeave }) {
 
   return (
     <div className="screen lobby-screen">
-      <div className="screen-actions">
+      <div className="screen-actions screen-actions-left">
         <button className="btn btn-ghost btn-inline" onClick={onLeave}>
           Quitter la partie
         </button>

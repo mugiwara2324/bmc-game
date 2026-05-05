@@ -665,6 +665,14 @@ input {
   justify-content: flex-end;
 }
 
+.screen-actions-left {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  width: auto;
+  z-index: 50;
+}
+
 .btn-inline {
   width: auto;
   min-width: 0;
@@ -1013,6 +1021,11 @@ input {
     top: 12px;
     right: 12px;
     padding: 9px 12px;
+  }
+
+  .screen-actions-left {
+    top: 12px;
+    left: 12px;
   }
 
   .theme-toggle-label {

@@ -64,7 +64,7 @@ export default function Home({ onJoined, onBackToHub }) {
   return (
     <div className="screen home-screen">
       {onBackToHub && !mode && (
-        <div className="screen-actions">
+        <div className="screen-actions screen-actions-left">
           <button type="button" className="btn btn-ghost btn-inline" onClick={onBackToHub}>
             Changer de jeu
           </button>
