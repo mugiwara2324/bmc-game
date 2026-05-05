@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { socket } from "../Socket";
+import iconBmc from "../assets/icone-BMC.png";
 
 function renderAnswer(question, card) {
   if (!question) return card || "";
@@ -185,7 +186,11 @@ export default function Game({ room, myId, myData, onLeave }) {
                     )}
                   </>
                 ) : (
-                  <span className="card-back">🃏</span>
+                  <img
+                    className="card-back-logo"
+                    src={iconBmc}
+                    alt="Dos de carte Blanc Manger Coco"
+                  />
                 )}
               </div>
             ))}

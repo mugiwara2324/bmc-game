@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { socket } from "../Socket";
+import logoBmc from "../assets/logo-BMC.webp";
 
-export default function Home({ onJoined }) {
+export default function Home({ onJoined, onBackToHub }) {
   const [mode, setMode] = useState(null); // "create" | "join"
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
@@ -62,15 +63,22 @@ export default function Home({ onJoined }) {
 
   return (
     <div className="screen home-screen">
+      {onBackToHub && !mode && (
+        <div className="screen-actions">
+          <button type="button" className="btn btn-ghost btn-inline" onClick={onBackToHub}>
+            Changer de jeu
+          </button>
+        </div>
+      )}
+
       <div className="home-header">
+        <img
+          className="home-logo"
+          src={logoBmc}
+          alt="Logo Blanc Manger Coco"
+        />
         <h1 className="home-title">
-          <span className="home-title-icon" aria-hidden="true">
-            🃏
-          </span>
           <span className="home-title-text">Noir Manger Coco</span>
-          <span className="home-title-icon" aria-hidden="true">
-            🃏
-          </span>
         </h1>
         <p className="home-subtitle">Le jeu de cartes entre amis</p>
       </div>

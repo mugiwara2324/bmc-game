@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { socket } from "./Socket";
+import GameHub from "./pages/GameHub";
 import Home from "./pages/Home";
 import Lobby from "./pages/Lobby";
 import Game from "./pages/Game";
@@ -7,7 +8,9 @@ import GameOver from "./pages/GameOver";
 import "./App.css";
 
 const SESSION_STORAGE_KEY = "bmc-game-session";
+const DEFAULT_GAME_ID = "noir-manger-coco";
 const RESTORE_TIMEOUT_MS = 8000;
+const THEME_STORAGE_KEY = "bmc-game-theme";
 
 function isValidSession(session) {
   return Boolean(
@@ -51,6 +54,29 @@ function clearSession() {
   window.localStorage.removeItem(SESSION_STORAGE_KEY);
 }
 
+function getSystemTheme() {
+  return window.matchMedia?.("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+}
+
+function loadTheme() {
+  try {
+    const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+    if (storedTheme === "light" || storedTheme === "dark") {
+      return storedTheme;
+    }
+
+    return getSystemTheme();
+  } catch {
+    return "light";
+  }
+}
+
+function saveTheme(theme) {
+  window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+}
+
 function getScreenFromRoom(room) {
   if (!room) return "home";
 
@@ -63,7 +89,7 @@ function getScreenFromRoom(room) {
 
 function getInitialScreen() {
   const session = loadSession();
-  if (!session) return "home";
+  if (!session) return "hub";
 
   if (session.lastPhase === "scores") {
     return "gameover";
@@ -73,7 +99,11 @@ function getInitialScreen() {
 }
 
 export default function App() {
-  const [screen, setScreen] = useState(getInitialScreen); // home | lobby | game | gameover
+  const [screen, setScreen] = useState(getInitialScreen); // hub | home | lobby | game | gameover
+  const [theme, setTheme] = useState(loadTheme);
+  const [selectedGame, setSelectedGame] = useState(() =>
+    loadSession() ? DEFAULT_GAME_ID : null,
+  );
   const [roomData, setRoomData] = useState(null); // infos de la salle
   const [myData, setMyData] = useState(null); // { id, name, hand }
   const [winner, setWinner] = useState(null);
@@ -81,6 +111,11 @@ export default function App() {
   const [isRestoringSession, setIsRestoringSession] = useState(
     () => !!loadSession(),
   );
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    saveTheme(theme);
+  }, [theme]);
 
   useEffect(() => {
     let restoreTimeout = null;
@@ -101,7 +136,7 @@ export default function App() {
       setMyData(null);
       setWinner(null);
       setFinalResults(null);
-      setScreen("home");
+      setScreen(selectedGame ? "home" : "hub");
       stopRestoring();
     };
 
@@ -199,7 +234,7 @@ export default function App() {
       socket.off("room_update", handleRoomUpdate);
       socket.off("game_over", handleGameOver);
     };
-  }, []);
+  }, [selectedGame]);
 
   useEffect(() => {
     if (!roomData) return;
@@ -215,6 +250,7 @@ export default function App() {
   }, [roomData]);
 
   const handleRoomJoined = ({ code, player, room }) => {
+    setSelectedGame(DEFAULT_GAME_ID);
     saveSession({
       code,
       playerId: player.id,
@@ -231,7 +267,7 @@ export default function App() {
   const leaveCurrentRoom = () => {
     const resetLocalState = () => {
       clearSession();
-      setScreen("home");
+      setScreen(selectedGame ? "home" : "hub");
       setRoomData(null);
       setMyData(null);
       setWinner(null);
@@ -255,10 +291,33 @@ export default function App() {
 
   const session = loadSession();
   const renderScreen = roomData ? getScreenFromRoom(roomData) : screen;
+  const toggleTheme = () => {
+    setTheme((currentTheme) =>
+      currentTheme === "dark" ? "light" : "dark",
+    );
+  };
+  const themeToggle = (
+    <button
+      type="button"
+      className="theme-toggle"
+      onClick={toggleTheme}
+      aria-label={
+        theme === "dark" ? "Activer le mode clair" : "Activer le mode sombre"
+      }
+    >
+      <span className="theme-toggle-icon" aria-hidden="true">
+        {theme === "dark" ? "☀️" : "🌙"}
+      </span>
+      <span className="theme-toggle-label">
+        {theme === "dark" ? "Mode clair" : "Mode sombre"}
+      </span>
+    </button>
+  );
 
   if (isRestoringSession && renderScreen !== "home" && !roomData) {
     return (
       <div className="app">
+        {themeToggle}
         <div className="screen">
           <p>Reconnexion a la partie...</p>
           <button
@@ -270,20 +329,22 @@ export default function App() {
               setWinner(null);
               setFinalResults(null);
               setIsRestoringSession(false);
-              setScreen("home");
+              setSelectedGame(null);
+              setScreen("hub");
             }}
           >
-            Retour a l'accueil
+            Retour aux jeux
           </button>
         </div>
       </div>
     );
   }
 
-  if (!roomData && renderScreen !== "home") {
+  if (!roomData && renderScreen !== "home" && renderScreen !== "hub") {
     if (session) {
       return (
         <div className="app">
+          {themeToggle}
           <div className="screen">
             <p>Reconnexion a la partie...</p>
             <button
@@ -295,10 +356,11 @@ export default function App() {
                 setWinner(null);
                 setFinalResults(null);
                 setIsRestoringSession(false);
-                setScreen("home");
+                setSelectedGame(null);
+                setScreen("hub");
               }}
             >
-              Retour a l'accueil
+              Retour aux jeux
             </button>
           </div>
         </div>
@@ -307,14 +369,47 @@ export default function App() {
 
     return (
       <div className="app">
-        <Home onJoined={handleRoomJoined} />
+        {themeToggle}
+        {selectedGame ? (
+          <Home
+            onJoined={handleRoomJoined}
+            onBackToHub={() => {
+              setSelectedGame(null);
+              setScreen("hub");
+            }}
+          />
+        ) : (
+          <GameHub
+            onSelectGame={(gameId) => {
+              setSelectedGame(gameId);
+              setScreen("home");
+            }}
+          />
+        )}
       </div>
     );
   }
 
   return (
     <div className="app">
-      {renderScreen === "home" && <Home onJoined={handleRoomJoined} />}
+      {themeToggle}
+      {renderScreen === "hub" && (
+        <GameHub
+          onSelectGame={(gameId) => {
+            setSelectedGame(gameId);
+            setScreen("home");
+          }}
+        />
+      )}
+      {renderScreen === "home" && (
+        <Home
+          onJoined={handleRoomJoined}
+          onBackToHub={() => {
+            setSelectedGame(null);
+            setScreen("hub");
+          }}
+        />
+      )}
       {renderScreen === "lobby" && (
         <Lobby room={roomData} myId={myData?.id} onLeave={leaveCurrentRoom} />
       )}
