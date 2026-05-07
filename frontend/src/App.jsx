@@ -115,6 +115,15 @@ export default function App() {
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
     saveTheme(theme);
+
+    const themeColor = theme === "dark" ? "#24151c" : "#f4eddb";
+    const themeMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeMeta) {
+      themeMeta.setAttribute("content", themeColor);
+    }
+
+    document.documentElement.style.backgroundColor = themeColor;
+    document.body.style.backgroundColor = themeColor;
   }, [theme]);
 
   useEffect(() => {

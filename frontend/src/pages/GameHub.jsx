@@ -1,4 +1,4 @@
-import logoBmc from "../assets/logo-BMC.webp";
+import logoBmc from "../assets/logo-BMC.png";
 
 const games = [
   {

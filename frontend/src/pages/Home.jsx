@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { socket } from "../Socket";
-import logoBmc from "../assets/logo-BMC.webp";
+import logoBmc from "../assets/logo-BMC.png";
 
 export default function Home({ onJoined, onBackToHub }) {
   const [mode, setMode] = useState(null); // "create" | "join"
@@ -65,18 +65,18 @@ export default function Home({ onJoined, onBackToHub }) {
     <div className="screen home-screen">
       {onBackToHub && !mode && (
         <div className="screen-actions screen-actions-left">
-          <button type="button" className="btn btn-ghost btn-inline" onClick={onBackToHub}>
+          <button
+            type="button"
+            className="btn btn-ghost btn-inline"
+            onClick={onBackToHub}
+          >
             Changer de jeu
           </button>
         </div>
       )}
 
       <div className="home-header">
-        <img
-          className="home-logo"
-          src={logoBmc}
-          alt="Logo Blanc Manger Coco"
-        />
+        <img className="home-logo" src={logoBmc} alt="Logo Blanc Manger Coco" />
         <h1 className="home-title">
           <span className="home-title-text">Noir Manger Coco</span>
         </h1>
