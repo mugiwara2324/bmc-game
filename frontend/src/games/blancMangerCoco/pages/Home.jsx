@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { socket } from "../Socket";
+import { socket } from "../../../shared/socket";
 import logoBmc from "../assets/logo-BMC.png";
 
-export default function Home({ onJoined, onBackToHub }) {
+export default function Home({ gameId = "noir-manger-coco", onJoined, onBackToHub }) {
   const [mode, setMode] = useState(null); // "create" | "join"
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
@@ -49,7 +49,7 @@ export default function Home({ onJoined, onBackToHub }) {
 
   const handleCreate = () => {
     if (!name.trim()) return setError("Entre ton pseudo !");
-    submitRequest("create_room", { name: name.trim(), maxScore });
+    submitRequest("create_room", { name: name.trim(), maxScore, gameId });
   };
 
   const handleJoin = () => {

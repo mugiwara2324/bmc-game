@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { socket } from "../Socket";
+import { socket } from "../../../shared/socket";
 import iconBmc from "../assets/icone-BMC.png";
 
 function renderAnswer(question, card) {

@@ -1,10 +1,14 @@
 import { useState, useEffect } from "react";
-import { socket } from "./Socket";
-import GameHub from "./pages/GameHub";
-import Home from "./pages/Home";
-import Lobby from "./pages/Lobby";
-import Game from "./pages/Game";
-import GameOver from "./pages/GameOver";
+import { socket } from "./shared/socket";
+import GameHub from "./hub/GameHub";
+import BmcHome from "./games/blancMangerCoco/pages/Home";
+import BmcLobby from "./games/blancMangerCoco/pages/Lobby";
+import BmcGame from "./games/blancMangerCoco/pages/Game";
+import BmcGameOver from "./games/blancMangerCoco/pages/GameOver";
+import SkyjoHome from "./games/skyjo/pages/Home";
+import SkyjoLobby from "./games/skyjo/pages/Lobby";
+import SkyjoGame from "./games/skyjo/pages/Game";
+import SkyjoGameOver from "./games/skyjo/pages/GameOver";
 import "./App.css";
 
 const SESSION_STORAGE_KEY = "bmc-game-session";
@@ -102,7 +106,7 @@ export default function App() {
   const [screen, setScreen] = useState(getInitialScreen); // hub | home | lobby | game | gameover
   const [theme, setTheme] = useState(loadTheme);
   const [selectedGame, setSelectedGame] = useState(() =>
-    loadSession() ? DEFAULT_GAME_ID : null,
+    loadSession()?.gameId || null,
   );
   const [roomData, setRoomData] = useState(null); // infos de la salle
   const [myData, setMyData] = useState(null); // { id, name, hand }
@@ -171,6 +175,7 @@ export default function App() {
         }
 
         updateSession({ lastPhase: res.room.phase });
+        setSelectedGame(res.room.gameId || DEFAULT_GAME_ID);
         setRoomData(res.room);
         setMyData(res.player);
         setScreen(getScreenFromRoom(res.room));
@@ -181,6 +186,7 @@ export default function App() {
     const handleRoomUpdate = (room) => {
       const session = loadSession();
       setRoomData(room);
+      setSelectedGame(room.gameId || DEFAULT_GAME_ID);
 
       if (session?.playerId) {
         const me = room.players.find(
@@ -196,7 +202,7 @@ export default function App() {
       }
 
       if (session) {
-        updateSession({ lastPhase: room.phase });
+        updateSession({ lastPhase: room.phase, gameId: room.gameId });
         setScreen(getScreenFromRoom(room));
         stopRestoring();
       }
@@ -259,10 +265,12 @@ export default function App() {
   }, [roomData]);
 
   const handleRoomJoined = ({ code, player, room }) => {
-    setSelectedGame(DEFAULT_GAME_ID);
+    const joinedGameId = room?.gameId || selectedGame || DEFAULT_GAME_ID;
+    setSelectedGame(joinedGameId);
     saveSession({
       code,
       playerId: player.id,
+      gameId: joinedGameId,
       lastPhase: room?.phase || "lobby",
     });
     setRoomData(room || null);
@@ -300,10 +308,23 @@ export default function App() {
 
   const session = loadSession();
   const renderScreen = roomData ? getScreenFromRoom(roomData) : screen;
+  const activeGameId = roomData?.gameId || selectedGame || DEFAULT_GAME_ID;
+  const Screens =
+    activeGameId === "skyjo"
+      ? {
+          Home: SkyjoHome,
+          Lobby: SkyjoLobby,
+          Game: SkyjoGame,
+          GameOver: SkyjoGameOver,
+        }
+      : {
+          Home: BmcHome,
+          Lobby: BmcLobby,
+          Game: BmcGame,
+          GameOver: BmcGameOver,
+        };
   const toggleTheme = () => {
-    setTheme((currentTheme) =>
-      currentTheme === "dark" ? "light" : "dark",
-    );
+    setTheme((currentTheme) => (currentTheme === "dark" ? "light" : "dark"));
   };
   const themeToggle = (
     <button
@@ -380,7 +401,8 @@ export default function App() {
       <div className="app">
         {themeToggle}
         {selectedGame ? (
-          <Home
+          <Screens.Home
+            gameId={activeGameId}
             onJoined={handleRoomJoined}
             onBackToHub={() => {
               setSelectedGame(null);
@@ -411,7 +433,8 @@ export default function App() {
         />
       )}
       {renderScreen === "home" && (
-        <Home
+        <Screens.Home
+          gameId={activeGameId}
           onJoined={handleRoomJoined}
           onBackToHub={() => {
             setSelectedGame(null);
@@ -420,10 +443,14 @@ export default function App() {
         />
       )}
       {renderScreen === "lobby" && (
-        <Lobby room={roomData} myId={myData?.id} onLeave={leaveCurrentRoom} />
+        <Screens.Lobby
+          room={roomData}
+          myId={myData?.id}
+          onLeave={leaveCurrentRoom}
+        />
       )}
       {renderScreen === "game" && (
-        <Game
+        <Screens.Game
           room={roomData}
           myId={myData?.id}
           myData={myData}
@@ -431,7 +458,7 @@ export default function App() {
         />
       )}
       {renderScreen === "gameover" && (
-        <GameOver
+        <Screens.GameOver
           winner={winner}
           results={finalResults}
           room={roomData}

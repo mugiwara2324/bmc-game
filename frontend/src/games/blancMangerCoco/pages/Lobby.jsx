@@ -1,4 +1,4 @@
-import { socket } from "../Socket";
+import { socket } from "../../../shared/socket";
 
 export default function Lobby({ room, myId, onLeave }) {
   if (!room)
@@ -46,7 +46,9 @@ export default function Lobby({ room, myId, onLeave }) {
             <span className="player-name">{p.name}</span>
             {p.id === room.host && <span className="badge">Hôte</span>}
             {p.id === myId && <span className="badge badge-me">Moi</span>}
-            {p.connected === false && <span className="badge">Reconnexion...</span>}
+            {p.connected === false && (
+              <span className="badge">Reconnexion...</span>
+            )}
           </div>
         ))}
       </div>

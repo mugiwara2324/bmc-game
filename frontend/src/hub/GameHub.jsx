@@ -1,4 +1,4 @@
-import logoBmc from "../assets/logo-BMC.png";
+import logoBmc from "../games/blancMangerCoco/assets/logo-BMC.png";
 
 const games = [
   {
@@ -8,6 +8,15 @@ const games = [
     description:
       "Questions noires, reponses absurdes, un jeu pour rigoler entre amis.",
     badge: "Disponible",
+    logo: logoBmc,
+  },
+  {
+    id: "skyjo",
+    title: "Skyjo",
+    subtitle: "Révèle, échange, élimine tes colonnes",
+    description:
+      "Un jeu de cartes tactique où le plus petit score l'emporte avant les 100 points.",
+    badge: "Nouveau",
   },
 ];
 
@@ -30,7 +39,11 @@ export default function GameHub({ onSelectGame }) {
           >
             <div className="game-card-top">
               <span className="game-card-icon" aria-hidden="true">
-                <img className="game-card-logo" src={logoBmc} alt="" />
+                {game.logo ? (
+                  <img className="game-card-logo" src={game.logo} alt="" />
+                ) : (
+                  <span className="skyjo-hub-icon">12</span>
+                )}
               </span>
               <span className="game-card-badge">{game.badge}</span>
             </div>

@@ -1,4 +1,4 @@
-import { socket } from "../Socket";
+import { socket } from "../../../shared/socket";
 
 export default function GameOver({ winner, results, room, myId, onQuit }) {
   const sorted = [...(results || [])].sort((a, b) => b.score - a.score);
