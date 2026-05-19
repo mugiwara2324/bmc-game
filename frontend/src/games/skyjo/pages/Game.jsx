@@ -10,9 +10,9 @@ function getCardTone(value) {
   return "red";
 }
 
-function SkyjoCard({ card, disabled, onClick, label }) {
+function SkyjoCard({ card, disabled, onClick, label, selected }) {
   const tone = card?.removed ? "removed" : getCardTone(card?.value);
-  const content = card?.removed ? "" : card?.value ?? "?";
+  const content = card?.removed ? "" : (card?.value ?? "?");
   const isInteractive = Boolean(onClick) && !disabled && !card?.removed;
   const Component = isInteractive ? "button" : "div";
 
@@ -21,7 +21,9 @@ function SkyjoCard({ card, disabled, onClick, label }) {
       {...(isInteractive ? { type: "button" } : {})}
       className={`skyjo-card skyjo-card-${tone} ${
         card?.revealed ? "is-revealed" : "is-hidden"
-      } ${isInteractive ? "is-clickable" : ""}`}
+      } ${isInteractive ? "is-clickable" : ""} ${
+        selected ? "is-selected" : ""
+      }`}
       onClick={isInteractive ? onClick : undefined}
       aria-label={label}
       role={isInteractive ? undefined : "img"}
@@ -50,6 +52,7 @@ function PlayerBoard({
   onRevealInitial,
   onExchange,
   onRevealAfterDiscard,
+  selectedExchangeIndex,
 }) {
   return (
     <section
@@ -91,6 +94,9 @@ function PlayerBoard({
               disabled={!onClick}
               onClick={onClick}
               label={`Carte ${card.index + 1}`}
+              selected={
+                canClickExchange && selectedExchangeIndex === card.index
+              }
             />
           );
         })}
@@ -101,8 +107,7 @@ function PlayerBoard({
 
 export default function Game({ room, myId, onLeave }) {
   const [boardView, setBoardView] = useState("mine");
-  const [isDiscardConfirmOpen, setIsDiscardConfirmOpen] = useState(false);
-  const [pendingExchangeIndex, setPendingExchangeIndex] = useState(null);
+  const [selectedAction, setSelectedAction] = useState(null);
   const players = room?.players || [];
   const me = players.find((player) => player.id === myId);
   const otherPlayers = players.filter((player) => player.id !== myId);
@@ -120,10 +125,9 @@ export default function Game({ room, myId, onLeave }) {
   const canExchange = hasDrawn && isMyTurn;
   const canDiscardDrawn = hasDrawn && isMyTurn && room.drawSource === "deck";
   const canRevealAfterDiscard = isRevealAfterDiscard && isMyTurn;
-  const pendingExchangeCard =
-    pendingExchangeIndex === null
-      ? null
-      : me?.board.find((card) => card.index === pendingExchangeIndex) || null;
+  const selectedExchangeIndex =
+    selectedAction?.type === "exchange" ? selectedAction.index : null;
+  const isDiscardSelected = selectedAction?.type === "discard";
 
   const drawCard = (source) => {
     if (!isMyTurn || !isPlaying) return;
@@ -143,30 +147,30 @@ export default function Game({ room, myId, onLeave }) {
     }
 
     if (source === "discard" && canDiscardDrawn) {
-      setIsDiscardConfirmOpen(true);
-    }
-  };
+      if (isDiscardSelected) {
+        socket.emit("skyjo_discard_drawn");
+        setSelectedAction(null);
+        return;
+      }
 
-  const confirmDiscardDrawn = () => {
-    if (!canDiscardDrawn) return;
-    setIsDiscardConfirmOpen(false);
-    socket.emit("skyjo_discard_drawn");
+      setSelectedAction({ type: "discard" });
+    }
   };
 
   const requestExchange = (index) => {
     if (!canExchange) return;
-    setPendingExchangeIndex(index);
-  };
 
-  const confirmExchange = () => {
-    if (!canExchange || pendingExchangeIndex === null) return;
-    socket.emit("skyjo_exchange", { index: pendingExchangeIndex });
-    setPendingExchangeIndex(null);
+    if (selectedAction?.type === "exchange" && selectedAction.index === index) {
+      socket.emit("skyjo_exchange", { index });
+      setSelectedAction(null);
+      return;
+    }
+
+    setSelectedAction({ type: "exchange", index });
   };
 
   useEffect(() => {
-    setIsDiscardConfirmOpen(false);
-    setPendingExchangeIndex(null);
+    setSelectedAction(null);
   }, [room.phase, room.drawnCard]);
 
   const sortedResults = [...(room.lastRound?.results || [])].sort(
@@ -230,7 +234,7 @@ export default function Game({ room, myId, onLeave }) {
             canDiscardDrawn
               ? "clickable"
               : ""
-          }`}
+          } ${isDiscardSelected ? "selected" : ""}`}
           onClick={() => {
             if (room.discardTop !== null || canDiscardDrawn) {
               handlePileClick("discard");
@@ -297,9 +301,12 @@ export default function Game({ room, myId, onLeave }) {
                 label="Carte piochée"
               />
               <p className="muted">
-                Clique sur une de tes cartes pour l'échanger.
+                {selectedAction?.type === "exchange" &&
+                  "Retouche la même carte pour confirmer l'échange."}
                 {room.drawSource === "deck"
-                  ? " Clique sur la défausse si tu veux jeter la carte piochée."
+                  ? isDiscardSelected
+                    ? " Retouche la défausse pour confirmer. Clique sur l'une de tes cartes pour l'échanger."
+                    : " Clique sur la défausse si tu veux jeter la carte piochée."
                   : ""}
               </p>
             </div>
@@ -325,129 +332,29 @@ export default function Game({ room, myId, onLeave }) {
       )}
 
       <div className="skyjo-boards">
-        {(boardView === "mine" ? [me].filter(Boolean) : otherPlayers).map((player) => (
-          <PlayerBoard
-            key={player.id}
-            player={player}
-            isMe={player.id === myId}
-            isCurrent={player.id === room.currentPlayerId}
-            canRevealInitial={canRevealInitial}
-            canExchange={canExchange}
-            canRevealAfterDiscard={canRevealAfterDiscard}
-            compact={boardView === "others"}
-            onRevealInitial={(index) =>
-              socket.emit("skyjo_reveal_initial", { index })
-            }
-            onExchange={requestExchange}
-            onRevealAfterDiscard={(index) =>
-              socket.emit("skyjo_reveal_after_discard", { index })
-            }
-          />
-        ))}
+        {(boardView === "mine" ? [me].filter(Boolean) : otherPlayers).map(
+          (player) => (
+            <PlayerBoard
+              key={player.id}
+              player={player}
+              isMe={player.id === myId}
+              isCurrent={player.id === room.currentPlayerId}
+              canRevealInitial={canRevealInitial}
+              canExchange={canExchange}
+              canRevealAfterDiscard={canRevealAfterDiscard}
+              compact={boardView === "others"}
+              onRevealInitial={(index) =>
+                socket.emit("skyjo_reveal_initial", { index })
+              }
+              onExchange={requestExchange}
+              onRevealAfterDiscard={(index) =>
+                socket.emit("skyjo_reveal_after_discard", { index })
+              }
+              selectedExchangeIndex={selectedExchangeIndex}
+            />
+          ),
+        )}
       </div>
-
-      {isDiscardConfirmOpen && (
-        <div className="skyjo-modal-backdrop" role="presentation">
-          <div
-            className="skyjo-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="skyjo-discard-title"
-          >
-            <h3 id="skyjo-discard-title">Défausser cette carte ?</h3>
-            <div className="skyjo-exchange-preview single">
-              <div className="skyjo-preview-card">
-                <span>Carte piochée</span>
-                <SkyjoCard
-                  card={{ value: room.drawnCard, revealed: true }}
-                  disabled
-                  label="Carte piochée"
-                />
-              </div>
-            </div>
-            <p>
-              Cette carte sera posée sur la défausse. Ensuite, tu devras
-              retourner une carte cachée de ton tableau.
-            </p>
-            <div className="skyjo-modal-actions">
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={() => setIsDiscardConfirmOpen(false)}
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={confirmDiscardDrawn}
-              >
-                Confirmer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {pendingExchangeIndex !== null && (
-        <div className="skyjo-modal-backdrop" role="presentation">
-          <div
-            className="skyjo-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="skyjo-exchange-title"
-          >
-            <h3 id="skyjo-exchange-title">Échanger cette carte ?</h3>
-            <div className="skyjo-exchange-preview">
-              <div className="skyjo-preview-card">
-                <span>Carte piochée</span>
-                <SkyjoCard
-                  card={{ value: room.drawnCard, revealed: true }}
-                  disabled
-                  label="Carte piochée"
-                />
-              </div>
-              <span className="skyjo-exchange-arrow" aria-hidden="true">
-                →
-              </span>
-              <div className="skyjo-preview-card">
-                <span>Carte choisie</span>
-                <SkyjoCard
-                  card={
-                    pendingExchangeCard || {
-                      value: null,
-                      revealed: false,
-                      removed: false,
-                    }
-                  }
-                  disabled
-                  label="Carte choisie"
-                />
-              </div>
-            </div>
-            <p>
-              La carte piochée remplacera la carte choisie. La carte remplacée
-              sera posée face visible sur la défausse.
-            </p>
-            <div className="skyjo-modal-actions">
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={() => setPendingExchangeIndex(null)}
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={confirmExchange}
-              >
-                Confirmer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {isRoundOver && (
         <div className="result-phase skyjo-round-result">
@@ -458,9 +365,7 @@ export default function Game({ room, myId, onLeave }) {
                 <span className="result-name">{result.name}</span>
                 <span className="result-votes">
                   Manche: {result.roundScore} pts
-                  {result.doubled
-                    ? ` (${result.baseRoundScore} x2)`
-                    : ""}
+                  {result.doubled ? ` (${result.baseRoundScore} x2)` : ""}
                 </span>
                 <span className="result-score">Total: {result.score} pts</span>
               </div>

@@ -1075,6 +1075,14 @@ input {
   outline: none;
 }
 
+.skyjo-pile.selected {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 4px var(--focus-ring),
+    var(--shadow-md);
+  transform: translateY(-3px);
+}
+
 .skyjo-pile-label {
   color: var(--text-muted);
   font-size: 0.76rem;
@@ -1141,6 +1149,15 @@ input {
 .skyjo-card.is-clickable,
 .skyjo-pile.clickable .skyjo-card {
   cursor: pointer;
+}
+
+.skyjo-card.is-selected {
+  border-color: var(--accent);
+  transform: translateY(-4px);
+  box-shadow:
+    0 0 0 4px var(--focus-ring),
+    0 16px 30px rgba(0, 0, 0, 0.2),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 
 .skyjo-card-blue {
@@ -1351,89 +1368,6 @@ input {
   justify-items: center;
 }
 
-.skyjo-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 80;
-  display: grid;
-  place-items: center;
-  padding: 18px;
-  background: rgba(45, 27, 34, 0.38);
-  backdrop-filter: blur(8px);
-}
-
-.skyjo-modal {
-  width: min(100%, 420px);
-  display: grid;
-  gap: 14px;
-  padding: 22px;
-  border-radius: 20px;
-  border: 1px solid var(--line);
-  background: var(--surface-strong);
-  color: var(--text);
-  box-shadow: var(--shadow-lg);
-}
-
-.skyjo-modal h3 {
-  color: var(--heading);
-  font-size: 1.25rem;
-  line-height: 1.2;
-}
-
-.skyjo-modal p {
-  color: var(--text-muted);
-  line-height: 1.5;
-}
-
-.skyjo-exchange-preview {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  border-radius: 16px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-}
-
-.skyjo-exchange-preview.single {
-  grid-template-columns: 1fr;
-  justify-items: center;
-}
-
-.skyjo-preview-card {
-  display: grid;
-  justify-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.skyjo-preview-card > span {
-  color: var(--text-muted);
-  font-size: 0.76rem;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  text-align: center;
-}
-
-.skyjo-preview-card .skyjo-card {
-  width: 68px;
-}
-
-.skyjo-exchange-arrow {
-  color: var(--accent);
-  font-size: 2rem;
-  font-weight: 950;
-  line-height: 1;
-}
-
-.skyjo-modal-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
 @keyframes skyjo-card-flip {
   0% {
     transform: rotateY(84deg) scale(0.96);
@@ -1617,18 +1551,6 @@ input {
     font-size: 2rem;
   }
 
-  .skyjo-exchange-preview {
-    gap: 8px;
-    padding: 10px;
-  }
-
-  .skyjo-preview-card .skyjo-card {
-    width: 58px;
-  }
-
-  .skyjo-exchange-arrow {
-    font-size: 1.5rem;
-  }
 }
 
 @media (max-width: 430px) {
