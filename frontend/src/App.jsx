@@ -14,7 +14,6 @@ import "./App.css";
 const SESSION_STORAGE_KEY = "bmc-game-session";
 const DEFAULT_GAME_ID = "noir-manger-coco";
 const RESTORE_TIMEOUT_MS = 8000;
-const THEME_STORAGE_KEY = "bmc-game-theme";
 
 function isValidSession(session) {
   return Boolean(
@@ -64,23 +63,6 @@ function getSystemTheme() {
     : "light";
 }
 
-function loadTheme() {
-  try {
-    const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
-    if (storedTheme === "light" || storedTheme === "dark") {
-      return storedTheme;
-    }
-
-    return getSystemTheme();
-  } catch {
-    return "light";
-  }
-}
-
-function saveTheme(theme) {
-  window.localStorage.setItem(THEME_STORAGE_KEY, theme);
-}
-
 function getScreenFromRoom(room) {
   if (!room) return "home";
 
@@ -104,7 +86,7 @@ function getInitialScreen() {
 
 export default function App() {
   const [screen, setScreen] = useState(getInitialScreen); // hub | home | lobby | game | gameover
-  const [theme, setTheme] = useState(loadTheme);
+  const [theme, setTheme] = useState(getSystemTheme);
   const [selectedGame, setSelectedGame] = useState(() =>
     loadSession()?.gameId || null,
   );
@@ -118,7 +100,6 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
-    saveTheme(theme);
 
     const themeColor = theme === "dark" ? "#24151c" : "#f4eddb";
     const themeMeta = document.querySelector('meta[name="theme-color"]');
@@ -129,6 +110,22 @@ export default function App() {
     document.documentElement.style.backgroundColor = themeColor;
     document.body.style.backgroundColor = themeColor;
   }, [theme]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia?.("(prefers-color-scheme: dark)");
+    if (!mediaQuery) return undefined;
+
+    const handleSystemThemeChange = () => {
+      setTheme(mediaQuery.matches ? "dark" : "light");
+    };
+
+    handleSystemThemeChange();
+    mediaQuery.addEventListener?.("change", handleSystemThemeChange);
+
+    return () => {
+      mediaQuery.removeEventListener?.("change", handleSystemThemeChange);
+    };
+  }, []);
 
   useEffect(() => {
     let restoreTimeout = null;
@@ -323,31 +320,9 @@ export default function App() {
           Game: BmcGame,
           GameOver: BmcGameOver,
         };
-  const toggleTheme = () => {
-    setTheme((currentTheme) => (currentTheme === "dark" ? "light" : "dark"));
-  };
-  const themeToggle = (
-    <button
-      type="button"
-      className="theme-toggle"
-      onClick={toggleTheme}
-      aria-label={
-        theme === "dark" ? "Activer le mode clair" : "Activer le mode sombre"
-      }
-    >
-      <span className="theme-toggle-icon" aria-hidden="true">
-        {theme === "dark" ? "☀️" : "🌙"}
-      </span>
-      <span className="theme-toggle-label">
-        {theme === "dark" ? "Mode clair" : "Mode sombre"}
-      </span>
-    </button>
-  );
-
   if (isRestoringSession && renderScreen !== "home" && !roomData) {
     return (
       <div className="app">
-        {themeToggle}
         <div className="screen">
           <p>Reconnexion a la partie...</p>
           <button
@@ -374,7 +349,6 @@ export default function App() {
     if (session) {
       return (
         <div className="app">
-          {themeToggle}
           <div className="screen">
             <p>Reconnexion a la partie...</p>
             <button
@@ -399,7 +373,6 @@ export default function App() {
 
     return (
       <div className="app">
-        {themeToggle}
         {selectedGame ? (
           <Screens.Home
             gameId={activeGameId}
@@ -423,7 +396,6 @@ export default function App() {
 
   return (
     <div className="app">
-      {themeToggle}
       {renderScreen === "hub" && (
         <GameHub
           onSelectGame={(gameId) => {
