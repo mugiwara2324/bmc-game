@@ -17,6 +17,7 @@ const ROOM_CLEANUP_DELAY = 5 * 60 * 1000;
 const BMC_GAME_ID = "noir-manger-coco";
 const SKYJO_GAME_ID = "skyjo";
 const QUESTION_POOL = [...new Set(cards.questions)];
+const ANSWER_POOL = [...new Set(cards.answers)];
 const rooms = {};
 
 function genCode() {
@@ -83,8 +84,32 @@ function emitRoomUpdate(room) {
   });
 }
 
-function dealBmcCards(n) {
-  return shuffle(cards.answers).slice(0, n);
+function buildAnswerDeck(excludedCards = []) {
+  const excluded = new Set(excludedCards.filter(Boolean));
+  return shuffle(ANSWER_POOL.filter((card) => !excluded.has(card)));
+}
+
+function getReservedBmcCards(room) {
+  return Object.values(room.players).flatMap((player) => [
+    ...(player.hand || []),
+    player.playedCard,
+  ]);
+}
+
+function drawBmcCards(room, count) {
+  const drawnCards = [];
+
+  while (drawnCards.length < count) {
+    if (!room.answerDeck?.length) {
+      room.answerDeck = buildAnswerDeck(getReservedBmcCards(room));
+    }
+
+    const nextCard = room.answerDeck?.pop();
+    if (!nextCard) break;
+    drawnCards.push(nextCard);
+  }
+
+  return drawnCards;
 }
 
 function getCurrentQuestion(room) {
@@ -198,8 +223,16 @@ function finalizeVoting(room, code) {
     tally[id] = (tally[id] || 0) + 1;
   });
 
-  const winnerId = Object.entries(tally).sort((a, b) => b[1] - a[1])[0][0];
-  room.players[winnerId].score += 1;
+  const highestVoteCount = Math.max(...Object.values(tally));
+  const winnerIds = Object.entries(tally)
+    .filter(([, votes]) => votes === highestVoteCount)
+    .map(([id]) => id);
+
+  winnerIds.forEach((winnerId) => {
+    if (room.players[winnerId]) {
+      room.players[winnerId].score += 1;
+    }
+  });
 
   const results = Object.entries(room.players).map(([id, player]) => ({
     id,
@@ -209,11 +242,18 @@ function finalizeVoting(room, code) {
     card: player.playedCard,
   }));
 
-  room.lastRound = { results, winnerId };
+  room.lastRound = {
+    results,
+    winnerId: winnerIds[0] || null,
+    winnerIds,
+  };
 
-  if (room.players[winnerId].score >= room.maxScore) {
+  const highestScore = Math.max(...results.map((result) => result.score));
+  const topScorers = results.filter((result) => result.score === highestScore);
+
+  if (highestScore >= room.maxScore) {
     room.phase = "scores";
-    room.winnerName = room.players[winnerId].name;
+    room.winnerName = topScorers.map((result) => result.name).join(" et ");
     room.finalResults = results;
     emitRoomUpdate(room);
     io.to(code).emit("game_over", {
@@ -235,7 +275,7 @@ function startNextBmcRound(room) {
 
   Object.values(room.players).forEach((player) => {
     player.playedCard = null;
-    player.hand.push(dealBmcCards(1)[0]);
+    player.hand.push(...drawBmcCards(room, 1));
   });
 
   room.votes = {};
@@ -244,11 +284,11 @@ function startNextBmcRound(room) {
   room.phase = "playing";
 }
 
-function createBmcPlayer(name, socketId) {
+function createBmcPlayer(name, socketId, hand = []) {
   return {
     name,
     score: 0,
-    hand: dealBmcCards(10),
+    hand,
     playedCard: null,
     socketId,
     connected: true,
@@ -257,14 +297,13 @@ function createBmcPlayer(name, socketId) {
 }
 
 function createBmcRoom({ code, playerId, name, socketId, maxScore }) {
-  return {
+  const room = {
     code,
     gameId: BMC_GAME_ID,
     host: playerId,
     maxScore: maxScore || 10,
-    players: {
-      [playerId]: createBmcPlayer(name, socketId),
-    },
+    players: {},
+    answerDeck: buildAnswerDeck(),
     questionIndex: 0,
     currentQuestion: null,
     questionDeck: buildQuestionDeck(),
@@ -276,6 +315,9 @@ function createBmcRoom({ code, playerId, name, socketId, maxScore }) {
     finalResults: null,
     cleanupTimer: null,
   };
+
+  room.players[playerId] = createBmcPlayer(name, socketId, drawBmcCards(room, 10));
+  return room;
 }
 
 function buildSkyjoDeck() {
@@ -634,10 +676,20 @@ function resetSkyjoToLobby(room) {
 
 function removePlayerFromRoom(room, playerId) {
   if (!room.players[playerId]) return;
+  const player = room.players[playerId];
 
   delete room.players[playerId];
 
   if (room.gameId === BMC_GAME_ID) {
+    const returnedCards = [
+      ...(player?.hand || []),
+      player?.playedCard,
+    ].filter(Boolean);
+
+    if (returnedCards.length) {
+      room.answerDeck = shuffle([...(room.answerDeck || []), ...returnedCards]);
+    }
+
     delete room.votes[playerId];
     room.revealedCards = (room.revealedCards || []).filter(
       (entry) => entry.id !== playerId,
@@ -709,7 +761,7 @@ io.on("connection", (socket) => {
     room.players[playerId] =
       room.gameId === SKYJO_GAME_ID
         ? createSkyjoPlayer(name, socket.id)
-        : createBmcPlayer(name, socket.id);
+        : createBmcPlayer(name, socket.id, drawBmcCards(room, 10));
 
     socket.join(code);
     socket.data.code = code;
@@ -907,10 +959,14 @@ io.on("connection", (socket) => {
 
     Object.values(room.players).forEach((p) => {
       p.score = 0;
-      p.hand = dealBmcCards(10);
+      p.hand = [];
       p.playedCard = null;
     });
 
+    room.answerDeck = buildAnswerDeck();
+    Object.values(room.players).forEach((player) => {
+      player.hand = drawBmcCards(room, 10);
+    });
     room.questionDeck = buildQuestionDeck();
     room.questionIndex = 0;
     room.currentQuestion = null;

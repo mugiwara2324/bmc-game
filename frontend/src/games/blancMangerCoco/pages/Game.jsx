@@ -38,6 +38,10 @@ export default function Game({ room, myId, myData, onLeave }) {
   const isHost = room?.host === myId;
   const allCardsRevealed =
     playedCards.length > 0 && revealedIndex >= playedCards.length - 1;
+  const roundWinnerIds = roundResult?.winnerIds || [];
+  const roundWinnerNames = roundWinnerIds
+    .map((winnerId) => room.players.find((player) => player.id === winnerId)?.name)
+    .filter(Boolean);
 
   useEffect(() => {
     if (room?.myPlayedCard) {
@@ -219,8 +223,10 @@ export default function Game({ room, myId, myData, onLeave }) {
       {phase === "result" && roundResult && (
         <div className="result-phase">
           <h3>
-            🏆 {room.players.find((p) => p.id === roundResult.winnerId)?.name}{" "}
-            remporte ce tour !
+            🏆{" "}
+            {roundWinnerNames.length > 1
+              ? `${roundWinnerNames.join(" et ")} remportent ce tour !`
+              : `${roundWinnerNames[0] || room.players.find((p) => p.id === roundResult.winnerId)?.name} remporte ce tour !`}
           </h3>
           <div className="result-list">
             {roundResult.results
@@ -228,7 +234,7 @@ export default function Game({ room, myId, myData, onLeave }) {
               .map((r) => (
                 <div
                   key={r.id}
-                  className={`result-row ${r.id === roundResult.winnerId ? "winner" : ""}`}
+                  className={`result-row ${roundWinnerIds.includes(r.id) ? "winner" : ""}`}
                 >
                   <span className="result-name">{r.name}</span>
                   <span className="result-card">"{r.card}"</span>
