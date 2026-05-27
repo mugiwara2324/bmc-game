@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { socket } from "../../../shared/socket";
 import iconBmc from "../assets/icone-BMC.png";
 
@@ -21,7 +21,7 @@ export default function Game({ room, myId, myData, onLeave }) {
   const me = players.find((player) => player.id === myId);
   const question = room?.currentQuestion || "";
   const phase = room?.phase || "playing";
-  const playedCards = room?.playedCards || [];
+  const playedCards = useMemo(() => room?.playedCards || [], [room]);
   const playCount = room?.playCount || {
     count: 0,
     total: connectedPlayers.length || players.length,

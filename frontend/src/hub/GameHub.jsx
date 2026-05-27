@@ -1,24 +1,4 @@
-import logoBmc from "../games/blancMangerCoco/assets/logo-BMC.png";
-
-const games = [
-  {
-    id: "noir-manger-coco",
-    title: "Noir Manger Coco",
-    subtitle: "La meilleur version du jeu Blanc Manger Coco",
-    description:
-      "Questions noires, reponses absurdes, un jeu pour rigoler entre amis.",
-    badge: "Disponible",
-    logo: logoBmc,
-  },
-  {
-    id: "skyjo",
-    title: "Skyjo",
-    subtitle: "Révèle, échange, élimine tes colonnes",
-    description:
-      "Un jeu de cartes tactique où le plus petit score l'emporte avant les 100 points.",
-    badge: "Nouveau",
-  },
-];
+import { games } from "../games/registry";
 
 export default function GameHub({ onSelectGame }) {
   return (

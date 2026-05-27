@@ -1,18 +1,9 @@
 import { useState, useEffect } from "react";
-import { socket } from "./shared/socket";
-import GameHub from "./hub/GameHub";
-import BmcHome from "./games/blancMangerCoco/pages/Home";
-import BmcLobby from "./games/blancMangerCoco/pages/Lobby";
-import BmcGame from "./games/blancMangerCoco/pages/Game";
-import BmcGameOver from "./games/blancMangerCoco/pages/GameOver";
-import SkyjoHome from "./games/skyjo/pages/Home";
-import SkyjoLobby from "./games/skyjo/pages/Lobby";
-import SkyjoGame from "./games/skyjo/pages/Game";
-import SkyjoGameOver from "./games/skyjo/pages/GameOver";
-import "./App.css";
+import { socket } from "../shared/socket";
+import GameHub from "../hub/GameHub";
+import { DEFAULT_GAME_ID, getGame } from "../games/registry";
 
 const SESSION_STORAGE_KEY = "bmc-game-session";
-const DEFAULT_GAME_ID = "noir-manger-coco";
 const RESTORE_TIMEOUT_MS = 8000;
 
 function isValidSession(session) {
@@ -306,20 +297,7 @@ export default function App() {
   const session = loadSession();
   const renderScreen = roomData ? getScreenFromRoom(roomData) : screen;
   const activeGameId = roomData?.gameId || selectedGame || DEFAULT_GAME_ID;
-  const Screens =
-    activeGameId === "skyjo"
-      ? {
-          Home: SkyjoHome,
-          Lobby: SkyjoLobby,
-          Game: SkyjoGame,
-          GameOver: SkyjoGameOver,
-        }
-      : {
-          Home: BmcHome,
-          Lobby: BmcLobby,
-          Game: BmcGame,
-          GameOver: BmcGameOver,
-        };
+  const Screens = getGame(activeGameId).screens;
   if (isRestoringSession && renderScreen !== "home" && !roomData) {
     return (
       <div className="app">
