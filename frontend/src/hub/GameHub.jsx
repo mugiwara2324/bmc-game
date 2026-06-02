@@ -21,6 +21,10 @@ export default function GameHub({ onSelectGame }) {
               <span className="game-card-icon" aria-hidden="true">
                 {game.logo ? (
                   <img className="game-card-logo" src={game.logo} alt="" />
+                ) : game.hubIcon ? (
+                  <span className={game.hubIconClassName || "game-hub-icon"}>
+                    {game.hubIcon}
+                  </span>
                 ) : (
                   <span className="skyjo-hub-icon">12</span>
                 )}

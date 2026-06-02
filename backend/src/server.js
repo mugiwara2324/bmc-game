@@ -3,11 +3,13 @@ const http = require("http");
 const { Server } = require("socket.io");
 const { v4: uuidv4 } = require("uuid");
 const {
+  BIZU_GAME_ID,
   BMC_GAME_ID,
   SKYJO_GAME_ID,
   getCreateGameId,
   getGame,
 } = require("./games/registry");
+const bizu = require("./games/bizu/engine");
 const bmc = require("./games/blancMangerCoco/engine");
 const skyjo = require("./games/skyjo/engine");
 const {
@@ -105,10 +107,17 @@ io.on("connection", (socket) => {
     }
 
     const playerId = uuidv4();
-    room.players[playerId] =
-      room.gameId === SKYJO_GAME_ID
-        ? skyjo.createPlayer(name, socket.id)
-        : bmc.createPlayer(name, socket.id, bmc.drawCards(room, 10));
+    if (room.gameId === SKYJO_GAME_ID) {
+      room.players[playerId] = skyjo.createPlayer(name, socket.id);
+    } else if (room.gameId === BIZU_GAME_ID) {
+      room.players[playerId] = bizu.createPlayer(name, socket.id);
+    } else {
+      room.players[playerId] = bmc.createPlayer(
+        name,
+        socket.id,
+        bmc.drawCards(room, 10),
+      );
+    }
 
     socket.join(code);
     socket.data.code = code;
@@ -193,6 +202,13 @@ io.on("connection", (socket) => {
     if (room.gameId === SKYJO_GAME_ID) {
       if (getConnectedCount(room) < 2) return;
       skyjo.startRound(room);
+      emitRoomUpdate(room);
+      return;
+    }
+
+    if (room.gameId === BIZU_GAME_ID) {
+      if (getConnectedCount(room) < 1) return;
+      bizu.startGame(room);
       emitRoomUpdate(room);
       return;
     }
@@ -298,6 +314,31 @@ io.on("connection", (socket) => {
     }
 
     bmc.replay(room);
+    emitRoomUpdate(room);
+  });
+
+  socket.on("bizu_draw_card", () => {
+    const code = socket.data.code;
+    const room = rooms[code];
+    const playerId = socket.data.playerId;
+
+    if (!isCurrentSocket(room, playerId, socket.id)) return;
+    if (!room || room.gameId !== BIZU_GAME_ID || room.phase !== "bizu_playing") return;
+
+    bizu.drawCard(room);
+    emitRoomUpdate(room);
+  });
+
+  socket.on("bizu_replay", () => {
+    const code = socket.data.code;
+    const room = rooms[code];
+    const playerId = socket.data.playerId;
+
+    if (!isCurrentSocket(room, playerId, socket.id)) return;
+    if (!room || room.gameId !== BIZU_GAME_ID || room.host !== playerId) return;
+    if (room.phase !== "bizu_finished") return;
+
+    bizu.replay(room);
     emitRoomUpdate(room);
   });
 

@@ -3,6 +3,10 @@ import BmcLobby from "./blancMangerCoco/pages/Lobby";
 import BmcGame from "./blancMangerCoco/pages/Game";
 import BmcGameOver from "./blancMangerCoco/pages/GameOver";
 import logoBmc from "./blancMangerCoco/assets/logo-BMC.png";
+import BizuHome from "./bizu/pages/Home";
+import BizuLobby from "./bizu/pages/Lobby";
+import BizuGame from "./bizu/pages/Game";
+import BizuGameOver from "./bizu/pages/GameOver";
 import SkyjoHome from "./skyjo/pages/Home";
 import SkyjoLobby from "./skyjo/pages/Lobby";
 import SkyjoGame from "./skyjo/pages/Game";
@@ -33,11 +37,29 @@ export const games = [
     description:
       "Un jeu de cartes tactique où le plus petit score l'emporte avant les 100 points.",
     badge: "Nouveau",
+    hubIcon: "12",
+    hubIconClassName: "skyjo-hub-icon",
     screens: {
       Home: SkyjoHome,
       Lobby: SkyjoLobby,
       Game: SkyjoGame,
       GameOver: SkyjoGameOver,
+    },
+  },
+  {
+    id: "le-bizu",
+    title: "Le BIZU",
+    subtitle: "Retourne les cartes, applique les règles",
+    description:
+      "Un jeu de cartes pour boire avec 52 cartes, 2 jokers et une règle par carte.",
+    badge: "Nouveau",
+    hubIcon: "A★",
+    hubIconClassName: "bizu-hub-icon",
+    screens: {
+      Home: BizuHome,
+      Lobby: BizuLobby,
+      Game: BizuGame,
+      GameOver: BizuGameOver,
     },
   },
 ];
