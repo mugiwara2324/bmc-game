@@ -1060,6 +1060,7 @@ input {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
   align-items: stretch;
+  perspective: 900px;
 }
 
 .skyjo-pile {
@@ -1090,12 +1091,10 @@ input {
   outline: none;
 }
 
-.skyjo-pile.selected {
-  border-color: var(--accent);
-  box-shadow:
-    0 0 0 4px var(--focus-ring),
-    var(--shadow-md);
-  transform: translateY(-3px);
+.skyjo-pile.discard-card-selected:hover,
+.skyjo-pile.discard-card-selected:focus-visible {
+  transform: none;
+  box-shadow: var(--shadow-sm);
 }
 
 .skyjo-pile-label {
@@ -1125,6 +1124,23 @@ input {
     filter 0.16s ease;
   transform-style: preserve-3d;
   animation: skyjo-card-flip 0.34s ease both;
+}
+
+.skyjo-card-slot {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  overflow: visible;
+}
+
+.skyjo-card-slot.is-selected {
+  z-index: 100;
+}
+
+.skyjo-card.is-selected {
+  overflow: visible;
 }
 
 .skyjo-card::before {
@@ -1168,11 +1184,39 @@ input {
 
 .skyjo-card.is-selected {
   border-color: var(--accent);
-  transform: translateY(-4px);
+  z-index: 2;
+  transform: translateY(-16px) rotateX(10deg) rotateZ(-1deg) scale(1.08);
   box-shadow:
-    0 0 0 4px var(--focus-ring),
-    0 16px 30px rgba(0, 0, 0, 0.2),
+    0 0 0 5px var(--focus-ring),
+    0 26px 44px rgba(0, 0, 0, 0.28),
+    0 8px 0 rgba(255, 255, 255, 0.28),
     inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+  animation: skyjo-selected-card 1.2s ease-in-out infinite;
+}
+
+.skyjo-card-confirm-hint {
+  z-index: 4;
+  pointer-events: none;
+  padding: 5px 7px;
+  border-radius: 999px;
+  background: rgba(255, 250, 241, 0.94);
+  color: var(--accent-dark);
+  font-size: 0.58rem;
+  font-weight: 950;
+  line-height: 1.05;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.18);
+}
+
+.skyjo-card-confirm-hint {
+  position: absolute;
+  left: 50%;
+  bottom: -24px;
+  width: max-content;
+  max-width: 112px;
+  transform: translateX(-50%);
 }
 
 .skyjo-card-blue {
@@ -1317,14 +1361,27 @@ input {
 }
 
 .skyjo-drawn-card {
+  position: relative;
   display: grid;
   justify-items: center;
   gap: 12px;
   padding: 14px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--accent-border);
   border-radius: 18px;
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  background:
+    radial-gradient(circle at top, var(--accent-soft), transparent 58%),
+    var(--surface);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.skyjo-drawn-card::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-radius: 14px;
+  border: 1px dashed var(--accent-border);
+  pointer-events: none;
 }
 
 .skyjo-boards {
@@ -1343,6 +1400,7 @@ input {
   box-shadow: var(--shadow-sm);
   display: grid;
   gap: 12px;
+  overflow: visible;
 }
 
 .skyjo-board-panel.me {
@@ -1365,6 +1423,10 @@ input {
   width: min(100%, 50px);
   border-width: 2px;
   border-radius: 8px;
+}
+
+.skyjo-board-panel.compact .skyjo-card-slot.is-selected {
+  z-index: 100;
 }
 
 .skyjo-board-panel.compact .skyjo-card-value {
@@ -1401,10 +1463,66 @@ input {
 }
 
 .skyjo-board-grid {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   justify-items: center;
+  perspective: 900px;
+  transform-style: preserve-3d;
+  overflow: visible;
+}
+
+.skyjo-turn-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at center, rgba(255, 250, 241, 0.42), transparent 42%),
+    rgba(45, 27, 34, 0.24);
+  animation: skyjo-turn-overlay-out 1.5s ease both;
+}
+
+:root[data-theme="dark"] .skyjo-turn-overlay {
+  background:
+    radial-gradient(circle at center, rgba(244, 237, 219, 0.18), transparent 42%),
+    rgba(0, 0, 0, 0.34);
+}
+
+.skyjo-turn-overlay-card {
+  width: min(100%, 520px);
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  padding: 32px 24px;
+  border-radius: 28px;
+  border: 1px solid var(--line-strong);
+  background:
+    linear-gradient(180deg, var(--overlay-top), transparent 70%),
+    var(--surface-strong);
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+  transform-style: preserve-3d;
+  animation: skyjo-turn-card-pop 1.5s ease both;
+}
+
+.skyjo-turn-overlay-card span {
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 950;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.skyjo-turn-overlay-card strong {
+  color: var(--heading);
+  font-size: clamp(2rem, 9vw, 4rem);
+  line-height: 0.95;
 }
 
 .bizu-home-screen .home-title {
@@ -1811,6 +1929,61 @@ input {
 
   100% {
     transform: rotateY(0deg) scale(1);
+  }
+}
+
+@keyframes skyjo-selected-card {
+  0%,
+  100% {
+    transform: translateY(-16px) rotateX(10deg) rotateZ(-1deg) scale(1.08);
+  }
+
+  50% {
+    transform: translateY(-22px) rotateX(13deg) rotateZ(1deg) scale(1.1);
+  }
+}
+
+@keyframes skyjo-selected-pulse {
+  0%,
+  100% {
+    transform: translateY(-10px) rotateX(8deg) scale(1.03);
+  }
+
+  50% {
+    transform: translateY(-15px) rotateX(11deg) scale(1.05);
+  }
+}
+
+@keyframes skyjo-turn-overlay-out {
+  0% {
+    opacity: 0;
+  }
+
+  12%,
+  72% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes skyjo-turn-card-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) rotateX(16deg) scale(0.92);
+  }
+
+  16%,
+  72% {
+    opacity: 1;
+    transform: translateY(0) rotateX(0deg) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-18px) rotateX(-10deg) scale(0.98);
   }
 }
 

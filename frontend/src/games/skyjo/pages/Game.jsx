@@ -35,6 +35,11 @@ function SkyjoCard({ card, disabled, onClick, label, selected }) {
           <span className="skyjo-card-corner skyjo-card-corner-bottom">
             {content}
           </span>
+          {selected && (
+            <span className="skyjo-card-confirm-hint">
+              Retouche pour confirmer
+            </span>
+          )}
         </>
       )}
     </Component>
@@ -86,18 +91,22 @@ function PlayerBoard({
           if (canClickRevealAfterDiscard) {
             onClick = () => onRevealAfterDiscard(card.index);
           }
+          const isSelected =
+            canClickExchange && selectedExchangeIndex === card.index;
 
           return (
-            <SkyjoCard
+            <div
               key={`${card.index}-${card.value}-${card.revealed}-${card.removed}`}
-              card={card}
-              disabled={!onClick}
-              onClick={onClick}
-              label={`Carte ${card.index + 1}`}
-              selected={
-                canClickExchange && selectedExchangeIndex === card.index
-              }
-            />
+              className={`skyjo-card-slot ${isSelected ? "is-selected" : ""}`}
+            >
+              <SkyjoCard
+                card={card}
+                disabled={!onClick}
+                onClick={onClick}
+                label={`Carte ${card.index + 1}`}
+                selected={isSelected}
+              />
+            </div>
           );
         })}
       </div>
@@ -108,6 +117,7 @@ function PlayerBoard({
 export default function Game({ room, myId, onLeave }) {
   const [boardView, setBoardView] = useState("mine");
   const [selectedAction, setSelectedAction] = useState(null);
+  const [showTurnOverlay, setShowTurnOverlay] = useState(false);
   const players = room?.players || [];
   const me = players.find((player) => player.id === myId);
   const otherPlayers = players.filter((player) => player.id !== myId);
@@ -173,12 +183,35 @@ export default function Game({ room, myId, onLeave }) {
     setSelectedAction(null);
   }, [room.phase, room.drawnCard]);
 
+  useEffect(() => {
+    if (!isMyTurn || !isPlaying) {
+      setShowTurnOverlay(false);
+      return undefined;
+    }
+
+    setShowTurnOverlay(true);
+    const timer = window.setTimeout(() => {
+      setShowTurnOverlay(false);
+    }, 1500);
+
+    return () => window.clearTimeout(timer);
+  }, [isMyTurn, isPlaying, room.currentPlayerId]);
+
   const sortedResults = [...(room.lastRound?.results || [])].sort(
     (a, b) => a.score - b.score,
   );
 
   return (
     <div className="screen skyjo-game-screen">
+      {showTurnOverlay && (
+        <div className="skyjo-turn-overlay" aria-live="polite">
+          <div className="skyjo-turn-overlay-card">
+            <strong>À toi de jouer !</strong>
+            <span>Choisis une carte</span>
+          </div>
+        </div>
+      )}
+
       <div className="screen-actions screen-actions-left">
         <button className="btn btn-ghost btn-inline" onClick={onLeave}>
           Quitter la partie
@@ -234,7 +267,7 @@ export default function Game({ room, myId, onLeave }) {
             canDiscardDrawn
               ? "clickable"
               : ""
-          } ${isDiscardSelected ? "selected" : ""}`}
+          } ${isDiscardSelected ? "discard-card-selected" : ""}`}
           onClick={() => {
             if (room.discardTop !== null || canDiscardDrawn) {
               handlePileClick("discard");
@@ -258,6 +291,7 @@ export default function Game({ room, myId, onLeave }) {
             card={{ value: room.discardTop, revealed: true }}
             disabled
             label="Carte de la défausse"
+            selected={isDiscardSelected}
           />
         </div>
       </div>
@@ -301,8 +335,9 @@ export default function Game({ room, myId, onLeave }) {
                 label="Carte piochée"
               />
               <p className="muted">
-                {selectedAction?.type === "exchange" &&
-                  "Retouche la même carte pour confirmer l'échange."}
+                {selectedAction?.type === "exchange"
+                  ? "Retouche la même carte pour confirmer l'échange."
+                  : "Clique sur une de tes cartes pour préparer l'échange."}
                 {room.drawSource === "deck"
                   ? isDiscardSelected
                     ? " Retouche la défausse pour confirmer. Clique sur l'une de tes cartes pour l'échanger."
