@@ -36,7 +36,7 @@ export const games = [
     subtitle: "Révèle, échange, élimine tes colonnes",
     description:
       "Un jeu de cartes tactique où le plus petit score l'emporte avant les 100 points.",
-    badge: "Nouveau",
+    badge: "Disponible",
     hubIcon: "12",
     hubIconClassName: "skyjo-hub-icon",
     screens: {
@@ -52,7 +52,7 @@ export const games = [
     subtitle: "Retourne les cartes, applique les règles",
     description:
       "Un jeu de cartes pour boire avec 52 cartes, 2 jokers et une règle par carte.",
-    badge: "Nouveau",
+    badge: "Disponible",
     hubIcon: "A★",
     hubIconClassName: "bizu-hub-icon",
     screens: {
