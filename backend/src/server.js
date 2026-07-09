@@ -6,12 +6,14 @@ const {
   BIZU_GAME_ID,
   BMC_GAME_ID,
   SKYJO_GAME_ID,
+  UNO_GAME_ID,
   getCreateGameId,
   getGame,
 } = require("./games/registry");
 const bizu = require("./games/bizu/engine");
 const bmc = require("./games/blancMangerCoco/engine");
 const skyjo = require("./games/skyjo/engine");
+const uno = require("./games/uno/engine");
 const {
   attachPlayerToSocket,
   getConnectedCount,
@@ -109,6 +111,8 @@ io.on("connection", (socket) => {
     const playerId = uuidv4();
     if (room.gameId === SKYJO_GAME_ID) {
       room.players[playerId] = skyjo.createPlayer(name, socket.id);
+    } else if (room.gameId === UNO_GAME_ID) {
+      room.players[playerId] = uno.createPlayer(name, socket.id);
     } else if (room.gameId === BIZU_GAME_ID) {
       room.players[playerId] = bizu.createPlayer(name, socket.id);
     } else {
@@ -213,6 +217,13 @@ io.on("connection", (socket) => {
       return;
     }
 
+    if (room.gameId === UNO_GAME_ID) {
+      if (getConnectedCount(room) < uno.UNO_MIN_PLAYERS) return;
+      uno.startGame(room);
+      emitRoomUpdate(room);
+      return;
+    }
+
     if (getConnectedCount(room) < 3) return;
 
     bmc.startGame(room);
@@ -309,6 +320,12 @@ io.on("connection", (socket) => {
 
     if (room.gameId === SKYJO_GAME_ID) {
       skyjo.resetToLobby(room);
+      emitRoomUpdate(room);
+      return;
+    }
+
+    if (room.gameId === UNO_GAME_ID) {
+      uno.replay(room);
       emitRoomUpdate(room);
       return;
     }
@@ -456,6 +473,39 @@ io.on("connection", (socket) => {
 
     targetCard.revealed = true;
     skyjo.finishTurn(room, getGameContext());
+  });
+
+  socket.on("uno_play_cards", ({ cardIds, chosenColor }) => {
+    const code = socket.data.code;
+    const room = rooms[code];
+    const playerId = socket.data.playerId;
+
+    if (!isCurrentSocket(room, playerId, socket.id)) return;
+    if (!room || room.gameId !== UNO_GAME_ID) return;
+
+    uno.playCards(room, playerId, cardIds, chosenColor, getGameContext());
+  });
+
+  socket.on("uno_draw", () => {
+    const code = socket.data.code;
+    const room = rooms[code];
+    const playerId = socket.data.playerId;
+
+    if (!isCurrentSocket(room, playerId, socket.id)) return;
+    if (!room || room.gameId !== UNO_GAME_ID) return;
+
+    uno.drawForTurn(room, playerId, getGameContext());
+  });
+
+  socket.on("uno_pass_after_draw", () => {
+    const code = socket.data.code;
+    const room = rooms[code];
+    const playerId = socket.data.playerId;
+
+    if (!isCurrentSocket(room, playerId, socket.id)) return;
+    if (!room || room.gameId !== UNO_GAME_ID) return;
+
+    uno.passAfterDraw(room, playerId, getGameContext());
   });
 
   socket.on("disconnect", () => {

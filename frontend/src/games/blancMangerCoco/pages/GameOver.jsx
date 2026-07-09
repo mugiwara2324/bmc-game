@@ -1,4 +1,5 @@
 import { socket } from "../../../shared/socket";
+import logoBmc from "../assets/logo-BMC.png";
 
 export default function GameOver({ winner, results, room, myId, onQuit }) {
   const sorted = [...(results || [])].sort((a, b) => b.score - a.score);
@@ -9,7 +10,7 @@ export default function GameOver({ winner, results, room, myId, onQuit }) {
   return (
     <div className="screen gameover-screen">
       <div className="gameover-header">
-        <div className="trophy">🏆</div>
+        <img className="home-logo" src={logoBmc} alt="Logo Blanc Manger Coco" />
         <h1>{winner} a gagné !</h1>
         <p className="subtitle">Félicitations au grand vainqueur</p>
       </div>

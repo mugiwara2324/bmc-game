@@ -1,9 +1,11 @@
 const BMC_GAME_ID = "noir-manger-coco";
 const SKYJO_GAME_ID = "skyjo";
 const BIZU_GAME_ID = "le-bizu";
+const UNO_GAME_ID = "uno";
 
 module.exports = {
   BIZU_GAME_ID,
   BMC_GAME_ID,
   SKYJO_GAME_ID,
+  UNO_GAME_ID,
 };

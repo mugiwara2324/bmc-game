@@ -1,4 +1,5 @@
 import { socket } from "../../../shared/socket";
+import logoSkyjo from "../assets/skyjo_logo.png";
 
 export default function GameOver({ winner, results, room, myId, onQuit }) {
   const sorted = [...(results || [])].sort((a, b) => a.score - b.score);
@@ -7,7 +8,7 @@ export default function GameOver({ winner, results, room, myId, onQuit }) {
   return (
     <div className="screen gameover-screen">
       <div className="gameover-header">
-        <div className="trophy">SKYJO</div>
+        <img className="home-logo" src={logoSkyjo} alt="Logo Skyjo" />
         <h1>{winner} gagne !</h1>
         <p className="subtitle">Score le plus bas à la fin de la partie</p>
       </div>

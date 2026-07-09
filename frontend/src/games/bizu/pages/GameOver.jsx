@@ -1,8 +1,10 @@
+import logoBizu from "../assets/bizu_logo.png";
+
 export default function GameOver({ onQuit }) {
   return (
     <div className="screen gameover-screen">
       <div className="gameover-header">
-        <div className="trophy">BIZU</div>
+        <img className="home-logo" src={logoBizu} alt="Logo Le BIZU" />
         <h1>Paquet terminé</h1>
         <p className="subtitle">La partie est finie.</p>
       </div>

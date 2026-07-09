@@ -2,7 +2,11 @@ import { useState } from "react";
 import { socket } from "../../../shared/socket";
 import logoBmc from "../assets/logo-BMC.png";
 
-export default function Home({ gameId = "noir-manger-coco", onJoined, onBackToHub }) {
+export default function Home({
+  gameId = "noir-manger-coco",
+  onJoined,
+  onBackToHub,
+}) {
   const [mode, setMode] = useState(null); // "create" | "join"
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
@@ -77,9 +81,10 @@ export default function Home({ gameId = "noir-manger-coco", onJoined, onBackToHu
 
       <div className="home-header">
         <img className="home-logo" src={logoBmc} alt="Logo Blanc Manger Coco" />
-        <h1 className="home-title">
-          <span className="home-title-text">Noir Manger Coco</span>
-        </h1>
+        {/* <h1 className="home-title">
+          <span className="home-title-text">Blanc Manger Coco</span>
+        </h1> */}
+        <br />
         <p className="home-subtitle">Le jeu de cartes entre amis</p>
       </div>
 

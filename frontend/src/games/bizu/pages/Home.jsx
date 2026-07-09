@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { socket } from "../../../shared/socket";
+import logoBizu from "../assets/bizu_logo.png";
 
 export default function Home({ gameId = "le-bizu", onJoined, onBackToHub }) {
   const [error, setError] = useState("");
@@ -15,14 +16,15 @@ export default function Home({ gameId = "le-bizu", onJoined, onBackToHub }) {
       socket.connect();
     }
 
-    socket.timeout(5000).emit(
-      "create_room",
-      { name: "Joueur", gameId },
-      (err, res) => {
+    socket
+      .timeout(5000)
+      .emit("create_room", { name: "Joueur", gameId }, (err, res) => {
         setIsSubmitting(false);
 
         if (err) {
-          setError("Impossible de joindre le serveur. Réessaie dans un instant.");
+          setError(
+            "Impossible de joindre le serveur. Réessaie dans un instant.",
+          );
           return;
         }
 
@@ -38,8 +40,7 @@ export default function Home({ gameId = "le-bizu", onJoined, onBackToHub }) {
 
         onJoined({ code: res.code, player: res.player, room: res.room });
         socket.emit("start_game");
-      },
-    );
+      });
   };
 
   return (
@@ -57,14 +58,16 @@ export default function Home({ gameId = "le-bizu", onJoined, onBackToHub }) {
       )}
 
       <div className="home-header bizu-home-header">
-        <div className="bizu-logo-mark" aria-hidden="true">
+        {/* <div className="bizu-logo-mark" aria-hidden="true">
           <span>A</span>
           <span>BIZU</span>
           <span>★</span>
-        </div>
-        <h1 className="home-title">
+        </div> */}
+        <img className="home-logo" src={logoBizu} alt="Logo Le BIZU" />
+        {/* <h1 className="home-title">
           <span className="home-title-text">Le BIZU</span>
-        </h1>
+        </h1> */}
+        <br />
         <p className="home-subtitle">
           Un paquet, une carte, une règle. La partie s'arrête quand tout le
           paquet est retourné.

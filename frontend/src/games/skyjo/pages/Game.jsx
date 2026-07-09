@@ -1,25 +1,58 @@
 import { useEffect, useState } from "react";
 import { socket } from "../../../shared/socket";
 
-function getCardTone(value) {
-  if (value === null || value === undefined) return "back";
-  if (value <= -1) return "blue";
-  if (value === 0) return "cyan";
-  if (value <= 4) return "green";
-  if (value <= 8) return "yellow";
-  return "red";
+// Import des images de cartes Skyjo
+import skyjoBack from "../assets/skyjo_back.png";
+import skyjoNeg1 from "../assets/skyjo_neg1.png";
+import skyjoNeg2 from "../assets/skyjo_neg2.png";
+import skyjo0 from "../assets/skyjo_0.png";
+import skyjo1 from "../assets/skyjo_1.png";
+import skyjo2 from "../assets/skyjo_2.png";
+import skyjo3 from "../assets/skyjo_3.png";
+import skyjo4 from "../assets/skyjo_4.png";
+import skyjo5 from "../assets/skyjo_5.png";
+import skyjo6 from "../assets/skyjo_6.png";
+import skyjo7 from "../assets/skyjo_7.png";
+import skyjo8 from "../assets/skyjo_8.png";
+import skyjo9 from "../assets/skyjo_9.png";
+import skyjo10 from "../assets/skyjo_10.png";
+import skyjo11 from "../assets/skyjo_11.png";
+import skyjo12 from "../assets/skyjo_12.png";
+
+const CARD_IMAGES = {
+  "-1": skyjoNeg1,
+  "-2": skyjoNeg2,
+  0: skyjo0,
+  1: skyjo1,
+  2: skyjo2,
+  3: skyjo3,
+  4: skyjo4,
+  5: skyjo5,
+  6: skyjo6,
+  7: skyjo7,
+  8: skyjo8,
+  9: skyjo9,
+  10: skyjo10,
+  11: skyjo11,
+  12: skyjo12,
+};
+
+function getCardImage(card) {
+  if (card?.removed) return null;
+  if (!card?.revealed) return skyjoBack;
+  if (card?.value === null || card?.value === undefined) return skyjoBack;
+  return CARD_IMAGES[card.value] ?? skyjoBack;
 }
 
 function SkyjoCard({ card, disabled, onClick, label, selected }) {
-  const tone = card?.removed ? "removed" : getCardTone(card?.value);
-  const content = card?.removed ? "" : (card?.value ?? "?");
+  const image = getCardImage(card);
   const isInteractive = Boolean(onClick) && !disabled && !card?.removed;
   const Component = isInteractive ? "button" : "div";
 
   return (
     <Component
       {...(isInteractive ? { type: "button" } : {})}
-      className={`skyjo-card skyjo-card-${tone} ${
+      className={`skyjo-card ${card?.removed ? "skyjo-card-removed" : ""} ${
         card?.revealed ? "is-revealed" : "is-hidden"
       } ${isInteractive ? "is-clickable" : ""} ${
         selected ? "is-selected" : ""
@@ -30,11 +63,12 @@ function SkyjoCard({ card, disabled, onClick, label, selected }) {
     >
       {!card?.removed && (
         <>
-          <span className="skyjo-card-corner">{content}</span>
-          <span className="skyjo-card-value">{content}</span>
-          <span className="skyjo-card-corner skyjo-card-corner-bottom">
-            {content}
-          </span>
+          <img
+            src={image}
+            alt={label}
+            className="skyjo-card-img"
+            draggable={false}
+          />
           {selected && (
             <span className="skyjo-card-confirm-hint">
               Retouche pour confirmer
@@ -257,7 +291,12 @@ export default function Game({ room, myId, onLeave }) {
         >
           <span className="skyjo-pile-label">Pioche</span>
           <div className="skyjo-card skyjo-card-back">
-            <span className="skyjo-card-value">?</span>
+            <img
+              src={skyjoBack}
+              alt="Pioche"
+              className="skyjo-card-img"
+              draggable={false}
+            />
           </div>
           <strong>{room.deckCount}</strong>
         </div>
