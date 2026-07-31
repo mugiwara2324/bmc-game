@@ -62,7 +62,7 @@ function removePlayerFromRoom(room, playerId) {
 }
 
 io.on("connection", (socket) => {
-  socket.on("create_room", ({ name, maxScore, gameId }, cb) => {
+  socket.on("create_room", ({ name, maxScore, gameId, variant }, cb) => {
     const code = genCode();
     const playerId = uuidv4();
     const selectedGameId = getCreateGameId(gameId);
@@ -74,6 +74,7 @@ io.on("connection", (socket) => {
       name,
       socketId: socket.id,
       maxScore,
+      variant,
     });
 
     socket.join(code);

@@ -1,14 +1,17 @@
 import { socket } from "../../../shared/socket";
 import logoUno from "../assets/uno_logo.png";
+import logoUnoFlip from "../assets/uno_flip_logo.png";
 
 export default function GameOver({ winner, results, room, myId, onQuit }) {
   const sorted = [...(results || [])].sort((a, b) => a.cardsLeft - b.cardsLeft);
   const isHost = room.host === myId;
+  const logo = room?.variant === "flip" ? logoUnoFlip : logoUno;
+  const logoAlt = room?.variant === "flip" ? "Logo UNO Flip" : "Logo UNO";
 
   return (
     <div className="screen gameover-screen uno-gameover-screen">
       <div className="gameover-header">
-        <img className="home-logo" src={logoUno} alt="Logo UNO" />
+        <img className="home-logo" src={logo} alt={logoAlt} />
         <h1>{winner} gagne !</h1>
         <p className="subtitle">Plus aucune carte en main.</p>
       </div>

@@ -27,7 +27,7 @@ export default function Lobby({ room, myId, onLeave }) {
       </div>
 
       <div className="lobby-header">
-        <h2>Salon UNO classique</h2>
+        <h2>Salon {room.variant === "flip" ? "UNO Flip" : "UNO classique"}</h2>
         <div className="code-block" onClick={copyCode} title="Copier le code">
           <span className="code-label">Code de la partie</span>
           <span className="code-value">{room.code}</span>

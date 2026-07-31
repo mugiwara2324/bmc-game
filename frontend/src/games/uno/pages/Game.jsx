@@ -5,13 +5,15 @@ import { socket } from "../../../shared/socket";
    IMAGE LOADER (CRA / Webpack)
 ========================= */
 
-const images = require.context("../assets/uno-classic-cards", false, /\.png$/);
+const classicImages = require.context("../assets/uno-classic-cards", false, /\.png$/);
+const flipLightImages = require.context("../assets/uno-flip-cards-light", false, /\.png$/);
+const flipDarkImages = require.context("../assets/uno-flip-cards-dark", false, /\.png$/);
 
-function getImage(name) {
+function getImage(loader, name) {
   try {
-    return images(`./${name}`);
+    return loader(`./${name}`);
   } catch (e) {
-    return images("./back.png");
+    return loader("./back.png");
   }
 }
 
@@ -19,29 +21,55 @@ function getImage(name) {
    CARD IMAGE MAPPING
 ========================= */
 
-function getCardImage(card) {
-  if (!card) return getImage("back.png");
+function getCardImage(card, room) {
+  const isFlip = room?.variant === "flip";
+  const side = card?.side || room?.side || "light";
+  const loader = isFlip
+    ? side === "dark"
+      ? flipDarkImages
+      : flipLightImages
+    : classicImages;
 
-  if (card.type === "wild") return getImage("wild.png");
-  if (card.type === "wild4") return getImage("wild4.png");
+  if (!card) return getImage(loader, "back.png");
+
+  if (card.type === "wild") return getImage(loader, "wild.png");
+  if (card.type === "wild4") return getImage(loader, "wild4.png");
+  if (card.type === "wild2") return getImage(loader, "wild2.png");
+  if (card.type === "wildDraw") return getImage(loader, "wildDraw.png");
 
   if (card.type === "number") {
-    return getImage(`${card.color}_${card.value}.png`);
+    return getImage(loader, `${card.color}_${card.value}.png`);
   }
 
   if (card.type === "reverse") {
-    return getImage(`${card.color}_reverse.png`);
+    return getImage(loader, `${card.color}_reverse.png`);
   }
 
   if (card.type === "skip") {
-    return getImage(`${card.color}_skip.png`);
+    return getImage(loader, `${card.color}_skip.png`);
   }
 
   if (card.type === "draw2") {
-    return getImage(`${card.color}_draw2.png`);
+    return getImage(loader, `${card.color}_draw2.png`);
   }
 
-  return getImage("back.png");
+  if (card.type === "draw1") {
+    return getImage(loader, `${card.color}_draw1.png`);
+  }
+
+  if (card.type === "draw5") {
+    return getImage(loader, `${card.color}_draw5.png`);
+  }
+
+  if (card.type === "flip") {
+    return getImage(loader, `${card.color}_flip.png`);
+  }
+
+  if (card.type === "replay") {
+    return getImage(loader, `${card.color}_replay.png`);
+  }
+
+  return getImage(loader, "back.png");
 }
 
 /* =========================
@@ -54,17 +82,40 @@ const COLORS = [
   { id: "green", label: "Vert" },
   { id: "blue", label: "Bleu" },
 ];
+const FLIP_COLORS = {
+  light: COLORS,
+  dark: [
+    { id: "pink", label: "Rose" },
+    { id: "cyan", label: "Turquoise" },
+    { id: "orange", label: "Orange" },
+    { id: "purple", label: "Violet" },
+  ],
+};
 
 const COLOR_LABEL_BY_ID = Object.fromEntries(
-  COLORS.map((color) => [color.id, color.label]),
+  [...COLORS, ...FLIP_COLORS.dark].map((color) => [color.id, color.label]),
 );
 
 // Ordre utilisé pour trier la main par couleur (les jokers a la fin)
-const COLOR_SORT_ORDER = { red: 0, yellow: 1, green: 2, blue: 3 };
+const COLOR_SORT_ORDER = {
+  red: 0,
+  yellow: 1,
+  green: 2,
+  blue: 3,
+  pink: 0,
+  cyan: 1,
+  orange: 2,
+  purple: 3,
+};
 
 function cardSortKey(card) {
-  if (card.type === "wild" || card.type === "wild4") {
-    return [4, card.type === "wild4" ? 1 : 0, 0];
+  if (
+    card.type === "wild" ||
+    card.type === "wild4" ||
+    card.type === "wild2" ||
+    card.type === "wildDraw"
+  ) {
+    return [4, card.type, 0];
   }
   const colorRank = COLOR_SORT_ORDER[card.color] ?? 5;
   const typeRank = card.type === "number" ? 0 : 1;
@@ -87,7 +138,7 @@ function sortHand(cards) {
    UNO CARD COMPONENT
 ========================= */
 
-function UnoCard({ card, selected, disabled, unplayable, playable, onClick, compact, orderBadge }) {
+function UnoCard({ card, room, selected, disabled, unplayable, playable, onClick, compact, orderBadge }) {
   const Component = onClick && !disabled ? "button" : "div";
 
   return (
@@ -100,7 +151,7 @@ function UnoCard({ card, selected, disabled, unplayable, playable, onClick, comp
       aria-label={card ? `${card.color || "Joker"} ${card.type}` : "Carte UNO"}
     >
       <img
-        src={getCardImage(card)}
+        src={getCardImage(card, room)}
         alt=""
         draggable={false}
         className="uno-card-image"
@@ -126,14 +177,24 @@ function canStartSelection(card, room) {
     return card.id === room.drawnPlayableCardId;
   }
 
+  if (room.pendingWildDrawColor) return false;
+
   if (room.pendingDraw > 0) {
     return (
       (room.pendingDrawType === "draw2" && card.type === "draw2") ||
-      (room.pendingDrawType === "wild4" && card.type === "wild4")
+      (room.pendingDrawType === "wild4" && card.type === "wild4") ||
+      (room.pendingDrawType === "draw1" && card.type === "draw1") ||
+      (room.pendingDrawType === "draw5" && card.type === "draw5") ||
+      (room.pendingDrawType === "wild2" && card.type === "wild2")
     );
   }
 
-  if (card.type === "wild" || card.type === "wild4") return true;
+  if (
+    card.type === "wild" ||
+    card.type === "wild4" ||
+    card.type === "wild2" ||
+    card.type === "wildDraw"
+  ) return true;
 
   if (!room.discardTop) return true;
 
@@ -144,7 +205,13 @@ function canStartSelection(card, room) {
 }
 
 function needsColor(cards) {
-  return cards.some((card) => card.type === "wild" || card.type === "wild4");
+  return cards.some(
+    (card) =>
+      card.type === "wild" ||
+      card.type === "wild4" ||
+      card.type === "wild2" ||
+      card.type === "wildDraw",
+  );
 }
 
 function canFinishWith(cards) {
@@ -190,7 +257,16 @@ export default function Game({ room, myId, onLeave }) {
   const canDraw =
     isMyTurn && selectedCards.length === 0 && !room.drawnPlayableCardId;
 
-  const pendingLabel = room.pendingDrawType === "wild4" ? "+4" : "+2";
+  const activeColors =
+    room.variant === "flip" ? FLIP_COLORS[room.side || "light"] : COLORS;
+  const pendingLabelByType = {
+    draw1: "+1",
+    draw2: "+2",
+    draw5: "+5",
+    wild2: "+2",
+    wild4: "+4",
+  };
+  const pendingLabel = pendingLabelByType[room.pendingDrawType] || "+";
   const currentColorLabel = room.currentColor
     ? COLOR_LABEL_BY_ID[room.currentColor] || room.currentColor
     : null;
@@ -198,6 +274,8 @@ export default function Game({ room, myId, onLeave }) {
   const statusMainText = isMyTurn
     ? room.pendingDraw > 0
       ? `Tu dois repondre au ${pendingLabel} (${room.pendingDraw} carte${room.pendingDraw > 1 ? "s" : ""}) ou piocher.`
+      : room.pendingWildDrawColor
+        ? `Tu dois piocher jusqu'a tomber sur ${COLOR_LABEL_BY_ID[room.pendingWildDrawColor] || room.pendingWildDrawColor}.`
       : mustPlayDrawnCard
         ? "Carte piochee jouable : joue-la ou passe."
         : "A toi de jouer : pose une carte ou pioche."
@@ -206,10 +284,18 @@ export default function Game({ room, myId, onLeave }) {
       : "En attente...";
 
   const statusSubParts = [];
+  if (room.variant === "flip") {
+    statusSubParts.push(`Face ${room.side === "dark" ? "sombre" : "claire"}`);
+  }
   if (currentColorLabel) statusSubParts.push(`Couleur en cours : ${currentColorLabel}`);
   if (!isMyTurn && room.pendingDraw > 0) {
     statusSubParts.push(
       `${currentPlayer?.name || "Le joueur"} devra repondre au ${pendingLabel} ou piocher ${room.pendingDraw} carte${room.pendingDraw > 1 ? "s" : ""}.`,
+    );
+  }
+  if (!isMyTurn && room.pendingWildDrawColor) {
+    statusSubParts.push(
+      `${currentPlayer?.name || "Le joueur"} devra piocher jusqu'a ${COLOR_LABEL_BY_ID[room.pendingWildDrawColor] || room.pendingWildDrawColor}.`,
     );
   }
   const statusSubText = statusSubParts.join(" · ");
@@ -328,12 +414,12 @@ export default function Game({ room, myId, onLeave }) {
             disabled={!canDraw}
           >
             <span>Pioche</span>
-            <UnoCard card={null} compact />
+            <UnoCard card={null} room={room} compact />
           </button>
 
           <div className="uno-pile">
             <span>Pile</span>
-            <UnoCard card={room.discardTop} compact />
+            <UnoCard card={room.discardTop} room={room} compact />
           </div>
         </div>
 
@@ -347,7 +433,7 @@ export default function Game({ room, myId, onLeave }) {
                 const isLocked = i === 0;
                 return (
                   <div key={`${card.id}-${i}`} className="uno-stack-item">
-                    <UnoCard card={card} compact orderBadge={i + 1} />
+                    <UnoCard card={card} room={room} compact orderBadge={i + 1} />
                     {isLocked ? (
                       <span className="uno-stack-final-hint">Carte de depart</span>
                     ) : (
@@ -385,7 +471,7 @@ export default function Game({ room, myId, onLeave }) {
         {requiresColorChoice && (
           <div className="uno-played-stack">
             <div className="uno-color-picker">
-              {COLORS.map((color) => (
+              {activeColors.map((color) => (
                 <button
                   key={color.id}
                   type="button"
@@ -400,7 +486,7 @@ export default function Game({ room, myId, onLeave }) {
             </div>
             {lastSelectedCard && (
               <p className="muted">
-                Choisis la couleur pour ta carte {lastSelectedCard.type === "wild4" ? "+4" : "joker"}.
+                Choisis la couleur pour ta carte {lastSelectedCard.type === "wild4" || lastSelectedCard.type === "wild2" ? "+2/+4" : "joker"}.
               </p>
             )}
           </div>
@@ -449,6 +535,7 @@ export default function Game({ room, myId, onLeave }) {
             <div key={card.id} className="uno-hand-card">
               <UnoCard
                 card={card}
+                room={room}
                 selected={selected}
                 disabled={!isMyTurn || !canSelect}
                 unplayable={unplayable}

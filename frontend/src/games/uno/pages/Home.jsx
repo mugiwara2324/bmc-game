@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { socket } from "../../../shared/socket";
 import logoUno from "../assets/uno_logo.png";
+import logoUnoFlip from "../assets/uno_flip_logo.png";
 
 export default function Home({ gameId = "uno", onJoined, onBackToHub }) {
   const [variant, setVariant] = useState(null);
@@ -47,6 +48,7 @@ export default function Home({ gameId = "uno", onJoined, onBackToHub }) {
     submitRequest("create_room", {
       name: name.trim(),
       gameId,
+      variant,
     });
   };
 
@@ -64,6 +66,8 @@ export default function Home({ gameId = "uno", onJoined, onBackToHub }) {
     setMode(null);
     setError("");
   };
+  const activeLogo = variant === "flip" ? logoUnoFlip : logoUno;
+  const activeLogoAlt = variant === "flip" ? "Logo UNO Flip" : "Logo UNO";
 
   return (
     <div className="screen home-screen uno-home-screen">
@@ -85,7 +89,7 @@ export default function Home({ gameId = "uno", onJoined, onBackToHub }) {
           <span>N</span>
           <span>O</span>
         </div> */}
-        <img className="home-logo" src={logoUno} alt="Logo UNO" />
+        <img className="home-logo" src={activeLogo} alt={activeLogoAlt} />
         {/* <h1 className="home-title">
           <span className="home-title-text">UNO</span>
         </h1> */}
@@ -112,19 +116,19 @@ export default function Home({ gameId = "uno", onJoined, onBackToHub }) {
 
           <button
             type="button"
-            className="uno-variant-card is-disabled"
-            disabled
+            className="uno-variant-card"
+            onClick={() => setVariant("flip")}
           >
             <span className="uno-card-preview uno-card-flip">FLIP</span>
             <span>
               <strong>UNO Flip</strong>
-              <small>Carte creee, moteur a venir</small>
+              <small>Face claire et face sombre</small>
             </span>
           </button>
         </div>
       )}
 
-      {variant === "classic" && !mode && (
+      {variant && !mode && (
         <div className="home-buttons">
           <button
             type="button"
@@ -156,9 +160,9 @@ export default function Home({ gameId = "uno", onJoined, onBackToHub }) {
         </div>
       )}
 
-      {variant === "classic" && mode === "create" && (
+      {variant && mode === "create" && (
         <div className="form-card">
-          <h2>Nouvelle partie UNO</h2>
+          <h2>Nouvelle partie {variant === "flip" ? "UNO Flip" : "UNO"}</h2>
           <label>Ton pseudo</label>
           <input
             className="input"
@@ -196,7 +200,7 @@ export default function Home({ gameId = "uno", onJoined, onBackToHub }) {
         </div>
       )}
 
-      {variant === "classic" && mode === "join" && (
+      {variant && mode === "join" && (
         <div className="form-card">
           <h2>Rejoindre une partie UNO</h2>
           <label>Ton pseudo</label>

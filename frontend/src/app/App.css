@@ -2454,6 +2454,26 @@ input {
   background: #1b77c4;
 }
 
+.uno-color-dot.pink,
+.uno-color-choice.pink {
+  background: #e84a91;
+}
+
+.uno-color-dot.cyan,
+.uno-color-choice.cyan {
+  background: #18bed1;
+}
+
+.uno-color-dot.orange,
+.uno-color-choice.orange {
+  background: #f17822;
+}
+
+.uno-color-dot.purple,
+.uno-color-choice.purple {
+  background: #7b3fce;
+}
+
 .uno-color-dot.wild {
   background: conic-gradient(#e32327, #facb1b, #138f4b, #1b77c4, #e32327);
 }
@@ -2696,8 +2716,7 @@ button.uno-pile {
   flex: 0 0 48px;
   display: grid;
   justify-items: center;
-  transform: translateY(calc((var(--stack-index) % 2) * -5px))
-    rotate(calc((var(--stack-index) - 1) * 3deg));
+  transform: translateY(-4px) rotate(calc((var(--stack-index) - 1) * 3deg));
   z-index: calc(10 + var(--stack-index));
 }
 
