@@ -298,7 +298,6 @@ export default function Game({ room, myId, onLeave }) {
               draggable={false}
             />
           </div>
-          <strong>{room.deckCount}</strong>
         </div>
         <div
           className={`skyjo-pile ${
@@ -399,10 +398,12 @@ export default function Game({ room, myId, onLeave }) {
       )}
 
       {room.closerId && !isRoundOver && (
-        <p className="muted">
-          {players.find((player) => player.id === room.closerId)?.name} a tout
-          révélé. Les autres terminent leur dernier tour.
-        </p>
+        <div className="skyjo-final-turn-alert" role="status" aria-live="polite">
+          <strong>Dernier tour</strong>
+          <span>
+            {players.find((player) => player.id === room.closerId)?.name} a retourne sa derniere carte. Les autres joueurs terminent leur tour.
+          </span>
+        </div>
       )}
 
       <div className="skyjo-boards">

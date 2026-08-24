@@ -2812,3 +2812,34 @@ button.uno-pile {
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+
+
+.skyjo-final-turn-alert {
+  width: min(100%, 680px);
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 2px solid rgba(239, 53, 43, 0.55);
+  background:
+    linear-gradient(135deg, rgba(239, 53, 43, 0.16), rgba(255, 243, 61, 0.16)),
+    var(--surface-strong);
+  box-shadow:
+    0 0 0 5px rgba(239, 53, 43, 0.08),
+    var(--shadow-md);
+  display: grid;
+  gap: 5px;
+  text-align: center;
+}
+
+.skyjo-final-turn-alert strong {
+  color: #ef352b;
+  font-size: 1.05rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.skyjo-final-turn-alert span {
+  color: var(--heading);
+  font-weight: 800;
+  line-height: 1.45;
+}

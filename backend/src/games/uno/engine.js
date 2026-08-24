@@ -34,36 +34,6 @@ function normalizeVariant(variant) {
   return variant === FLIP_VARIANT ? FLIP_VARIANT : CLASSIC_VARIANT;
 }
 
-function getActiveDeck(room) {
-  return room.variant === FLIP_VARIANT ? room.decks[room.side] : room.deck;
-}
-
-function setActiveDeck(room, deck) {
-  if (room.variant === FLIP_VARIANT) {
-    room.decks[room.side] = deck;
-  } else {
-    room.deck = deck;
-  }
-}
-
-function getActiveDiscardPile(room) {
-  return room.variant === FLIP_VARIANT
-    ? room.discardPiles[room.side]
-    : room.discardPile;
-}
-
-function getActiveHand(player, room) {
-  return room.variant === FLIP_VARIANT ? player.hands[room.side] : player.hand;
-}
-
-function setActiveHand(player, room, hand) {
-  if (room.variant === FLIP_VARIANT) {
-    player.hands[room.side] = hand;
-  } else {
-    player.hand = hand;
-  }
-}
-
 function makeCard(type, color = null, value = null, side = null) {
   const labelByType = {
     skip: "Passe ton tour",
@@ -92,6 +62,33 @@ function makeCard(type, color = null, value = null, side = null) {
   };
 }
 
+function makeFlipPair(lightFace, darkFace) {
+  return {
+    id: uuidv4(),
+    variant: FLIP_VARIANT,
+    faces: {
+      [LIGHT_SIDE]: { ...lightFace, id: undefined },
+      [DARK_SIDE]: { ...darkFace, id: undefined },
+    },
+  };
+}
+
+function getCardFace(card, roomOrSide) {
+  if (!card?.faces) return card;
+  const side = typeof roomOrSide === "string" ? roomOrSide : roomOrSide?.side;
+  const face = card.faces[side || LIGHT_SIDE] || card.faces[LIGHT_SIDE];
+  return {
+    ...face,
+    id: card.id,
+    pairId: card.id,
+  };
+}
+
+function exposeCard(card, room) {
+  if (!card) return null;
+  return getCardFace(card, room);
+}
+
 function buildSingleDeck() {
   const colorCards = COLORS.flatMap((color) => {
     const numbers = Array.from({ length: 10 }, (_, value) =>
@@ -118,8 +115,7 @@ function buildDeck(playerCount = 1) {
   );
 }
 
-function buildFlipSideDeck(side, playerCount = 1) {
-  const multiplier = getDeckMultiplier(playerCount);
+function buildFlipFaces(side) {
   const colors = FLIP_COLORS[side];
   const actionTypes =
     side === LIGHT_SIDE
@@ -127,28 +123,33 @@ function buildFlipSideDeck(side, playerCount = 1) {
       : ["draw5", "reverse", "replay", "flip"];
   const wildTypes = side === LIGHT_SIDE ? ["wild", "wild2"] : ["wild", "wildDraw"];
 
-  const buildSingleSideDeck = () => {
-    const colorCards = colors.flatMap((color) => {
-      const numbers = Array.from({ length: 9 }, (_, index) =>
-        Array.from({ length: 2 }, () =>
-          makeCard("number", color, index + 1, side),
-        ),
-      ).flat();
-      const actions = actionTypes.flatMap((type) =>
-        Array.from({ length: 2 }, () => makeCard(type, color, null, side)),
-      );
-      return [...numbers, ...actions];
-    });
-
-    const wilds = wildTypes.flatMap((type) =>
-      Array.from({ length: 4 }, () => makeCard(type, null, null, side)),
+  const colorCards = colors.flatMap((color) => {
+    const numbers = Array.from({ length: 9 }, (_, index) =>
+      Array.from({ length: 2 }, () => makeCard("number", color, index + 1, side)),
+    ).flat();
+    const actions = actionTypes.flatMap((type) =>
+      Array.from({ length: 2 }, () => makeCard(type, color, null, side)),
     );
+    return [...numbers, ...actions];
+  });
 
-    return [...colorCards, ...wilds];
-  };
+  const wilds = wildTypes.flatMap((type) =>
+    Array.from({ length: 4 }, () => makeCard(type, null, null, side)),
+  );
 
+  return shuffle([...colorCards, ...wilds]);
+}
+
+function buildFlipDeck(playerCount = 1) {
+  const multiplier = getDeckMultiplier(playerCount);
   return shuffle(
-    Array.from({ length: multiplier }, () => buildSingleSideDeck()).flat(),
+    Array.from({ length: multiplier }, () => {
+      const lightFaces = buildFlipFaces(LIGHT_SIDE);
+      const darkFaces = buildFlipFaces(DARK_SIDE);
+      return lightFaces.map((lightFace, index) =>
+        makeFlipPair(lightFace, darkFaces[index]),
+      );
+    }).flat(),
   );
 }
 
@@ -160,10 +161,6 @@ function createPlayer(name, socketId) {
     connected: true,
     disconnectedAt: null,
     hand: [],
-    hands: {
-      [LIGHT_SIDE]: [],
-      [DARK_SIDE]: [],
-    },
   };
 }
 
@@ -180,16 +177,8 @@ function createRoom({ code, playerId, name, socketId, variant }) {
       [playerId]: createPlayer(name, socketId),
     },
     phase: "lobby",
-    deck: buildDeck(1),
-    decks: {
-      [LIGHT_SIDE]: buildFlipSideDeck(LIGHT_SIDE, 1),
-      [DARK_SIDE]: buildFlipSideDeck(DARK_SIDE, 1),
-    },
+    deck: selectedVariant === FLIP_VARIANT ? buildFlipDeck(1) : buildDeck(1),
     discardPile: [],
-    discardPiles: {
-      [LIGHT_SIDE]: [],
-      [DARK_SIDE]: [],
-    },
     turnOrder: [],
     currentPlayerId: null,
     direction: 1,
@@ -207,17 +196,13 @@ function createRoom({ code, playerId, name, socketId, variant }) {
 }
 
 function drawCard(room) {
-  let deck = getActiveDeck(room);
-  const discardPile = getActiveDiscardPile(room);
-
-  if (!deck.length) {
-    const topDiscard = discardPile.pop();
-    deck = shuffle(discardPile);
-    discardPile.splice(0, discardPile.length, ...(topDiscard ? [topDiscard] : []));
-    setActiveDeck(room, deck);
+  if (!room.deck.length) {
+    const topDiscard = room.discardPile.pop();
+    room.deck = shuffle(room.discardPile);
+    room.discardPile = topDiscard ? [topDiscard] : [];
   }
 
-  return deck.pop() || null;
+  return room.deck.pop() || null;
 }
 
 function drawCards(room, count) {
@@ -244,44 +229,42 @@ function advanceTurn(room, steps = 1) {
 }
 
 function getTopCard(room) {
-  return getActiveDiscardPile(room).at(-1) || null;
+  return room.discardPile.at(-1) || null;
 }
 
 function getCurrentColor(room) {
-  return room.chosenColor || getTopCard(room)?.color || null;
+  return room.chosenColor || getCardFace(getTopCard(room), room)?.color || null;
 }
 
 function canPlayOnTop(card, room) {
-  if (!card) return false;
+  const face = getCardFace(card, room);
+  if (!face) return false;
 
   if (room.pendingWildDrawColor) return false;
 
   if (room.pendingDraw > 0) {
     return (
-      (room.pendingDrawType === "draw2" && card.type === "draw2") ||
-      (room.pendingDrawType === "wild4" && card.type === "wild4") ||
-      (room.pendingDrawType === "draw1" && card.type === "draw1") ||
-      (room.pendingDrawType === "draw5" && card.type === "draw5") ||
-      (room.pendingDrawType === "wild2" && card.type === "wild2")
+      (room.pendingDrawType === "draw2" && face.type === "draw2") ||
+      (room.pendingDrawType === "wild4" && face.type === "wild4") ||
+      (room.pendingDrawType === "draw1" && face.type === "draw1") ||
+      (room.pendingDrawType === "draw5" && face.type === "draw5") ||
+      (room.pendingDrawType === "wild2" && face.type === "wild2")
     );
   }
 
   if (
-    card.type === "wild" ||
-    card.type === "wild4" ||
-    card.type === "wild2" ||
-    card.type === "wildDraw"
+    face.type === "wild" ||
+    face.type === "wild4" ||
+    face.type === "wild2" ||
+    face.type === "wildDraw"
   ) {
     return true;
   }
 
-  const topCard = getTopCard(room);
-  if (!topCard) return true;
+  const topFace = getCardFace(getTopCard(room), room);
+  if (!topFace) return true;
 
-  return (
-    card.color === getCurrentColor(room) ||
-    card.stackKey === topCard.stackKey
-  );
+  return face.color === getCurrentColor(room) || face.stackKey === topFace.stackKey;
 }
 
 function normalizeColor(color) {
@@ -292,36 +275,34 @@ function normalizeColor(color) {
 function validatePlay(room, player, cardIds, chosenColor) {
   if (!Array.isArray(cardIds) || cardIds.length === 0) return null;
 
-  const hand = getActiveHand(player, room);
-  const cards = cardIds.map((id) => hand.find((card) => card.id === id));
+  const cards = cardIds.map((id) => player.hand.find((card) => card.id === id));
   if (cards.some((card) => !card)) return null;
 
-  const [firstCard] = cards;
-  if (!cards.every((card) => card.stackKey === firstCard.stackKey)) {
+  const faces = cards.map((card) => getCardFace(card, room));
+  const [firstFace] = faces;
+  if (!faces.every((face) => face.stackKey === firstFace.stackKey)) return null;
+
+  if (room.drawnPlayableCardId && cards[0].id !== room.drawnPlayableCardId) {
     return null;
   }
 
-  if (room.drawnPlayableCardId && firstCard.id !== room.drawnPlayableCardId) {
-    return null;
-  }
-
-  const wouldEmptyHand = hand.length === cards.length;
-  const canFinish = cards.every((card) => card.type === "number");
+  const wouldEmptyHand = player.hand.length === cards.length;
+  const canFinish = faces.every((face) => face.type === "number");
   if (wouldEmptyHand && !canFinish) return null;
 
-  if (!canPlayOnTop(firstCard, room)) return null;
+  if (!canPlayOnTop(cards[0], room)) return null;
 
-  const needsColor = cards.some(
-    (card) =>
-      card.type === "wild" ||
-      card.type === "wild4" ||
-      card.type === "wild2" ||
-      card.type === "wildDraw",
+  const needsColor = faces.some(
+    (face) =>
+      face.type === "wild" ||
+      face.type === "wild4" ||
+      face.type === "wild2" ||
+      face.type === "wildDraw",
   );
   const nextColor = needsColor ? normalizeColor(chosenColor) : null;
   if (needsColor && !nextColor) return null;
 
-  return { cards, nextColor };
+  return { cards, faces, nextColor };
 }
 
 function finishGame(room, winnerId, context) {
@@ -329,7 +310,7 @@ function finishGame(room, winnerId, context) {
     .map(([id, player]) => ({
       id,
       name: player.name,
-      cardsLeft: getActiveHand(player, room).length,
+      cardsLeft: player.hand.length,
     }))
     .sort((a, b) => a.cardsLeft - b.cardsLeft);
 
@@ -345,41 +326,38 @@ function finishGame(room, winnerId, context) {
   });
 }
 
-function applyPlayedCards(room, playerId, cards, chosenColor, context) {
+function applyPlayedCards(room, playerId, cards, faces, chosenColor, context) {
   const player = room.players[playerId];
   const playedIds = new Set(cards.map((card) => card.id));
-  setActiveHand(
-    player,
-    room,
-    getActiveHand(player, room).filter((card) => !playedIds.has(card.id)),
-  );
+  player.hand = player.hand.filter((card) => !playedIds.has(card.id));
 
-  cards.forEach((card) => getActiveDiscardPile(room).push(card));
-  room.lastPlayedCards = cards;
+  cards.forEach((card) => room.discardPile.push(card));
+  room.lastPlayedCards = cards.map((card) => exposeCard(card, room));
   room.lastMove = {
     playerId,
     playerName: player.name,
-    cards,
+    cards: cards.map((card) => exposeCard(card, room)),
     chosenColor,
   };
   room.chosenColor = chosenColor;
   room.drawnPlayableCardId = null;
 
-  if (!getActiveHand(player, room).length) {
+  if (!player.hand.length) {
     finishGame(room, playerId, context);
     return;
   }
 
-  const draw2Count = cards.filter((card) => card.type === "draw2").length;
-  const draw1Count = cards.filter((card) => card.type === "draw1").length;
-  const draw5Count = cards.filter((card) => card.type === "draw5").length;
-  const wild4Count = cards.filter((card) => card.type === "wild4").length;
-  const wild2Count = cards.filter((card) => card.type === "wild2").length;
-  const wildDrawCount = cards.filter((card) => card.type === "wildDraw").length;
-  const reverseCount = cards.filter((card) => card.type === "reverse").length;
-  const skipCount = cards.filter((card) => card.type === "skip").length;
-  const replayCount = cards.filter((card) => card.type === "replay").length;
-  const flipCount = cards.filter((card) => card.type === "flip").length;
+  const countType = (type) => faces.filter((face) => face.type === type).length;
+  const draw2Count = countType("draw2");
+  const draw1Count = countType("draw1");
+  const draw5Count = countType("draw5");
+  const wild4Count = countType("wild4");
+  const wild2Count = countType("wild2");
+  const wildDrawCount = countType("wildDraw");
+  const reverseCount = countType("reverse");
+  const skipCount = countType("skip");
+  const replayCount = countType("replay");
+  const flipCount = countType("flip");
 
   if (draw2Count > 0) {
     room.pendingDraw += draw2Count * 2;
@@ -441,6 +419,7 @@ function playCards(room, playerId, cardIds, chosenColor, context) {
     room,
     playerId,
     validPlay.cards,
+    validPlay.faces,
     validPlay.nextColor,
     context,
   );
@@ -457,15 +436,15 @@ function drawForTurn(room, playerId, context) {
   if (hasWildDrawPenalty) {
     const drawnCards = [];
     const targetColor = room.pendingWildDrawColor;
-    let guard = getActiveDeck(room).length + getActiveDiscardPile(room).length + 8;
+    let guard = room.deck.length + room.discardPile.length + 8;
     while (guard > 0) {
       guard -= 1;
       const card = drawCard(room);
       if (!card) break;
       drawnCards.push(card);
-      if (card.color === targetColor) break;
+      if (getCardFace(card, room).color === targetColor) break;
     }
-    setActiveHand(player, room, [...getActiveHand(player, room), ...drawnCards]);
+    player.hand.push(...drawnCards);
     room.pendingWildDrawColor = null;
     room.lastPlayedCards = [];
     room.lastMove = null;
@@ -477,7 +456,7 @@ function drawForTurn(room, playerId, context) {
 
   const drawCount = hasDrawPenalty ? room.pendingDraw : 1;
   const drawnCards = drawCards(room, drawCount);
-  setActiveHand(player, room, [...getActiveHand(player, room), ...drawnCards]);
+  player.hand.push(...drawnCards);
   room.pendingDraw = 0;
   room.pendingDrawType = null;
   room.lastPlayedCards = [];
@@ -485,8 +464,6 @@ function drawForTurn(room, playerId, context) {
   room.drawnPlayableCardId = null;
 
   if (hasDrawPenalty) {
-    // +2 et +4 fonctionnent pareil : la pioche forcee met toujours fin au
-    // tour (le seul moyen d'eviter de piocher est de surencherir avant).
     advanceTurn(room, 1);
     context.emitRoomUpdate(room);
     return true;
@@ -514,20 +491,20 @@ function passAfterDraw(room, playerId, context) {
   return true;
 }
 
+function drawInitialNumber(room) {
+  let firstCard = drawCard(room);
+  while (firstCard && getCardFace(firstCard, room).type !== "number") {
+    room.deck.unshift(firstCard);
+    room.deck = shuffle(room.deck);
+    firstCard = drawCard(room);
+  }
+  return firstCard;
+}
+
 function startGame(room) {
   const playerIds = Object.keys(room.players);
-  if (room.variant === FLIP_VARIANT) {
-    room.side = LIGHT_SIDE;
-    room.decks = {
-      [LIGHT_SIDE]: buildFlipSideDeck(LIGHT_SIDE, playerIds.length),
-      [DARK_SIDE]: buildFlipSideDeck(DARK_SIDE, playerIds.length),
-    };
-    room.discardPiles = {
-      [LIGHT_SIDE]: [],
-      [DARK_SIDE]: [],
-    };
-  }
-  room.deck = buildDeck(playerIds.length);
+  room.side = room.variant === FLIP_VARIANT ? LIGHT_SIDE : null;
+  room.deck = room.variant === FLIP_VARIANT ? buildFlipDeck(playerIds.length) : buildDeck(playerIds.length);
   room.discardPile = [];
   room.turnOrder = shuffle(playerIds);
   room.currentPlayerId = room.turnOrder[0] || null;
@@ -543,63 +520,23 @@ function startGame(room) {
   room.finalResults = null;
 
   playerIds.forEach((playerId) => {
-    if (room.variant === FLIP_VARIANT) {
-      room.side = LIGHT_SIDE;
-      room.players[playerId].hands[LIGHT_SIDE] = drawCards(room, 7);
-      room.side = DARK_SIDE;
-      room.players[playerId].hands[DARK_SIDE] = drawCards(room, 7);
-      room.side = LIGHT_SIDE;
-      room.players[playerId].hand = room.players[playerId].hands[LIGHT_SIDE];
-    } else {
-      room.players[playerId].hand = drawCards(room, 7);
-    }
+    room.players[playerId].hand = drawCards(room, 7);
   });
 
-  let firstCard = drawCard(room);
-  while (firstCard && firstCard.type !== "number") {
-    getActiveDeck(room).unshift(firstCard);
-    setActiveDeck(room, shuffle(getActiveDeck(room)));
-    firstCard = drawCard(room);
-  }
-
+  const firstCard = drawInitialNumber(room);
   if (firstCard) room.discardPile.push(firstCard);
-  if (room.variant === FLIP_VARIANT) {
-    const lightFirstCard = room.discardPile.pop();
-    if (lightFirstCard) room.discardPiles[LIGHT_SIDE].push(lightFirstCard);
-    room.side = DARK_SIDE;
-    let darkFirstCard = drawCard(room);
-    while (darkFirstCard && darkFirstCard.type !== "number") {
-      getActiveDeck(room).unshift(darkFirstCard);
-      setActiveDeck(room, shuffle(getActiveDeck(room)));
-      darkFirstCard = drawCard(room);
-    }
-    if (darkFirstCard) room.discardPiles[DARK_SIDE].push(darkFirstCard);
-    room.side = LIGHT_SIDE;
-    room.discardPile = [];
-  }
   room.phase = "uno_playing";
 }
 
 function replay(room) {
   Object.values(room.players).forEach((player) => {
     player.hand = [];
-    player.hands = {
-      [LIGHT_SIDE]: [],
-      [DARK_SIDE]: [],
-    };
   });
+  const playerCount = Object.keys(room.players).length;
   room.phase = "lobby";
-  room.deck = buildDeck(Object.keys(room.players).length);
-  room.decks = {
-    [LIGHT_SIDE]: buildFlipSideDeck(LIGHT_SIDE, Object.keys(room.players).length),
-    [DARK_SIDE]: buildFlipSideDeck(DARK_SIDE, Object.keys(room.players).length),
-  };
-  room.discardPile = [];
-  room.discardPiles = {
-    [LIGHT_SIDE]: [],
-    [DARK_SIDE]: [],
-  };
   room.side = room.variant === FLIP_VARIANT ? LIGHT_SIDE : null;
+  room.deck = room.variant === FLIP_VARIANT ? buildFlipDeck(playerCount) : buildDeck(playerCount);
+  room.discardPile = [];
   room.turnOrder = [];
   room.currentPlayerId = null;
   room.direction = 1;
@@ -632,8 +569,8 @@ function sanitizeRoom(room, requesterId) {
     host: room.host,
     phase: room.phase,
     side: room.side,
-    deckCount: getActiveDeck(room).length,
-    discardTop: topCard,
+    deckCount: room.deck.length,
+    discardTop: exposeCard(topCard, room),
     chosenColor: room.chosenColor,
     currentColor: getCurrentColor(room),
     currentPlayerId: room.currentPlayerId,
@@ -652,11 +589,8 @@ function sanitizeRoom(room, requesterId) {
       name: player.name,
       score: player.score,
       connected: player.connected,
-      cardsCount:
-        room.variant === FLIP_VARIANT
-          ? getActiveHand(player, room).length
-          : player.hand.length,
-      hand: id === requesterId ? getActiveHand(player, room) : undefined,
+      cardsCount: player.hand.length,
+      hand: id === requesterId ? player.hand.map((card) => exposeCard(card, room)) : undefined,
     })),
   };
 }
