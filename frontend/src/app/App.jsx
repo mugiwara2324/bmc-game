@@ -76,13 +76,13 @@ function getInitialScreen() {
 }
 
 export default function App() {
-  const [screen, setScreen] = useState(getInitialScreen); // hub | home | lobby | game | gameover
+  const [screen, setScreen] = useState(getInitialScreen);
   const [theme, setTheme] = useState(getSystemTheme);
-  const [selectedGame, setSelectedGame] = useState(() =>
-    loadSession()?.gameId || null,
+  const [selectedGame, setSelectedGame] = useState(
+    () => loadSession()?.gameId || null,
   );
-  const [roomData, setRoomData] = useState(null); // infos de la salle
-  const [myData, setMyData] = useState(null); // { id, name, hand }
+  const [roomData, setRoomData] = useState(null);
+  const [myData, setMyData] = useState(null);
   const [winner, setWinner] = useState(null);
   const [finalResults, setFinalResults] = useState(null);
   const [isRestoringSession, setIsRestoringSession] = useState(

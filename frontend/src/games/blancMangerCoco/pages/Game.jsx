@@ -40,7 +40,9 @@ export default function Game({ room, myId, myData, onLeave }) {
     playedCards.length > 0 && revealedIndex >= playedCards.length - 1;
   const roundWinnerIds = roundResult?.winnerIds || [];
   const roundWinnerNames = roundWinnerIds
-    .map((winnerId) => room.players.find((player) => player.id === winnerId)?.name)
+    .map(
+      (winnerId) => room.players.find((player) => player.id === winnerId)?.name,
+    )
     .filter(Boolean);
 
   useEffect(() => {
@@ -110,7 +112,6 @@ export default function Game({ room, myId, myData, onLeave }) {
         </button>
       </div>
 
-      {/* Scores en haut */}
       <div className="scoreboard">
         {players.map((p) => (
           <div key={p.id} className={`score-chip ${p.id === myId ? "me" : ""}`}>
@@ -120,7 +121,6 @@ export default function Game({ room, myId, myData, onLeave }) {
         ))}
       </div>
 
-      {/* Question */}
       <div className="question-card">
         <p className="question-label">Question</p>
         <p className="question-text">
@@ -128,7 +128,6 @@ export default function Game({ room, myId, myData, onLeave }) {
         </p>
       </div>
 
-      {/* Phase : jouer une carte */}
       {phase === "playing" && (
         <div className="playing-phase">
           {hasPlayed ? (
@@ -160,7 +159,6 @@ export default function Game({ room, myId, myData, onLeave }) {
         </div>
       )}
 
-      {/* Phase : révélation */}
       {(phase === "revealing" || phase === "voting") && (
         <div className="reveal-phase">
           <p className="phase-label">
@@ -219,7 +217,6 @@ export default function Game({ room, myId, myData, onLeave }) {
         </div>
       )}
 
-      {/* Phase : résultat du round */}
       {phase === "result" && roundResult && (
         <div className="result-phase">
           <h3>

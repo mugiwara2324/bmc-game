@@ -58,15 +58,7 @@ export default function Home({ gameId = "le-bizu", onJoined, onBackToHub }) {
       )}
 
       <div className="home-header bizu-home-header">
-        {/* <div className="bizu-logo-mark" aria-hidden="true">
-          <span>A</span>
-          <span>BIZU</span>
-          <span>★</span>
-        </div> */}
         <img className="home-logo" src={logoBizu} alt="Logo Le BIZU" />
-        {/* <h1 className="home-title">
-          <span className="home-title-text">Le BIZU</span>
-        </h1> */}
         <br />
         <p className="home-subtitle">
           Un paquet, une carte, une règle. La partie s'arrête quand tout le

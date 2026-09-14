@@ -1,13 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { socket } from "../../../shared/socket";
 
-/* =========================
-   IMAGE LOADER (CRA / Webpack)
-========================= */
-
-const classicImages = require.context("../assets/uno-classic-cards", false, /\.png$/);
-const flipLightImages = require.context("../assets/uno-flip-cards-light", false, /\.png$/);
-const flipDarkImages = require.context("../assets/uno-flip-cards-dark", false, /\.png$/);
+const classicImages = require.context(
+  "../assets/uno-classic-cards",
+  false,
+  /\.png$/,
+);
+const flipLightImages = require.context(
+  "../assets/uno-flip-cards-light",
+  false,
+  /\.png$/,
+);
+const flipDarkImages = require.context(
+  "../assets/uno-flip-cards-dark",
+  false,
+  /\.png$/,
+);
 
 function getImage(loader, name) {
   try {
@@ -16,10 +24,6 @@ function getImage(loader, name) {
     return loader("./back.png");
   }
 }
-
-/* =========================
-   CARD IMAGE MAPPING
-========================= */
 
 function getCardImage(card, room) {
   const isFlip = room?.variant === "flip";
@@ -72,10 +76,6 @@ function getCardImage(card, room) {
   return getImage(loader, "back.png");
 }
 
-/* =========================
-   COLORS
-========================= */
-
 const COLORS = [
   { id: "red", label: "Rouge" },
   { id: "yellow", label: "Jaune" },
@@ -96,7 +96,6 @@ const COLOR_LABEL_BY_ID = Object.fromEntries(
   [...COLORS, ...FLIP_COLORS.dark].map((color) => [color.id, color.label]),
 );
 
-// Ordre utilisé pour trier la main par couleur (les jokers a la fin)
 const COLOR_SORT_ORDER = {
   red: 0,
   yellow: 1,
@@ -138,7 +137,17 @@ function sortHand(cards) {
    UNO CARD COMPONENT
 ========================= */
 
-function UnoCard({ card, room, selected, disabled, unplayable, playable, onClick, compact, orderBadge }) {
+function UnoCard({
+  card,
+  room,
+  selected,
+  disabled,
+  unplayable,
+  playable,
+  onClick,
+  compact,
+  orderBadge,
+}) {
   const Component = onClick && !disabled ? "button" : "div";
 
   return (
@@ -194,7 +203,8 @@ function canStartSelection(card, room) {
     card.type === "wild4" ||
     card.type === "wild2" ||
     card.type === "wildDraw"
-  ) return true;
+  )
+    return true;
 
   if (!room.discardTop) return true;
 
@@ -276,9 +286,9 @@ export default function Game({ room, myId, onLeave }) {
       ? `Tu dois repondre au ${pendingLabel} (${room.pendingDraw} carte${room.pendingDraw > 1 ? "s" : ""}) ou piocher.`
       : room.pendingWildDrawColor
         ? `Tu dois piocher jusqu'a tomber sur ${COLOR_LABEL_BY_ID[room.pendingWildDrawColor] || room.pendingWildDrawColor}.`
-      : mustPlayDrawnCard
-        ? "Carte piochee jouable : joue-la ou passe."
-        : "A toi de jouer : pose une carte ou pioche."
+        : mustPlayDrawnCard
+          ? "Carte piochee jouable : joue-la ou passe."
+          : "A toi de jouer : pose une carte ou pioche."
     : currentPlayer
       ? `Tour de ${currentPlayer.name}...`
       : "En attente...";
@@ -287,7 +297,8 @@ export default function Game({ room, myId, onLeave }) {
   if (room.variant === "flip") {
     statusSubParts.push(`Face ${room.side === "dark" ? "sombre" : "claire"}`);
   }
-  if (currentColorLabel) statusSubParts.push(`Couleur en cours : ${currentColorLabel}`);
+  if (currentColorLabel)
+    statusSubParts.push(`Couleur en cours : ${currentColorLabel}`);
   if (!isMyTurn && room.pendingDraw > 0) {
     statusSubParts.push(
       `${currentPlayer?.name || "Le joueur"} devra repondre au ${pendingLabel} ou piocher ${room.pendingDraw} carte${room.pendingDraw > 1 ? "s" : ""}.`,
@@ -433,9 +444,16 @@ export default function Game({ room, myId, onLeave }) {
                 const isLocked = i === 0;
                 return (
                   <div key={`${card.id}-${i}`} className="uno-stack-item">
-                    <UnoCard card={card} room={room} compact orderBadge={i + 1} />
+                    <UnoCard
+                      card={card}
+                      room={room}
+                      compact
+                      orderBadge={i + 1}
+                    />
                     {isLocked ? (
-                      <span className="uno-stack-final-hint">Carte de depart</span>
+                      <span className="uno-stack-final-hint">
+                        Carte de depart
+                      </span>
                     ) : (
                       <div className="uno-stack-controls">
                         <button
@@ -486,7 +504,12 @@ export default function Game({ room, myId, onLeave }) {
             </div>
             {lastSelectedCard && (
               <p className="muted">
-                Choisis la couleur pour ta carte {lastSelectedCard.type === "wild4" || lastSelectedCard.type === "wild2" ? "+2/+4" : "joker"}.
+                Choisis la couleur pour ta carte{" "}
+                {lastSelectedCard.type === "wild4" ||
+                lastSelectedCard.type === "wild2"
+                  ? "+2/+4"
+                  : "joker"}
+                .
               </p>
             )}
           </div>
@@ -541,7 +564,9 @@ export default function Game({ room, myId, onLeave }) {
                 unplayable={unplayable}
                 playable={playable}
                 onClick={() => handleSelectCard(card)}
-                orderBadge={selected && selectedIds.length > 1 ? orderIndex + 1 : null}
+                orderBadge={
+                  selected && selectedIds.length > 1 ? orderIndex + 1 : null
+                }
               />
             </div>
           );

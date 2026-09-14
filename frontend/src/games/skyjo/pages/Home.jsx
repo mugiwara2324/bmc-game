@@ -74,15 +74,7 @@ export default function Home({ gameId = "skyjo", onJoined, onBackToHub }) {
       )}
 
       <div className="home-header skyjo-home-header">
-        {/* <div className="skyjo-logo-mark" aria-hidden="true">
-          <span>12</span>
-          <span>0</span>
-          <span>-2</span>
-        </div> */}
         <img className="home-logo" src={logoSkyjo} alt="Logo Skyjo" />
-        {/* <h1 className="home-title">
-          <span className="home-title-text">Skyjo</span>
-        </h1> */}
         <br />
         <p className="home-subtitle">
           Le plus petit score gagne. La partie s'arrête à 100 points.

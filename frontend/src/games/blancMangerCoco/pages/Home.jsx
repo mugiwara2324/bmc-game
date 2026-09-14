@@ -81,9 +81,6 @@ export default function Home({
 
       <div className="home-header">
         <img className="home-logo" src={logoBmc} alt="Logo Blanc Manger Coco" />
-        {/* <h1 className="home-title">
-          <span className="home-title-text">Blanc Manger Coco</span>
-        </h1> */}
         <br />
         <p className="home-subtitle">Le jeu de cartes entre amis</p>
       </div>

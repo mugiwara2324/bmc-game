@@ -39,9 +39,6 @@ export default function GameOver({ winner, results, room, myId, onQuit }) {
           🚪 Quitter
         </button>
       </div>
-      {/* <button className="btn btn-primary btn-large" onClick={onRestart}>
-        Rejouer
-      </button> */}
     </div>
   );
 }

@@ -973,11 +973,6 @@ input {
   margin-bottom: 8px;
 }
 
-.trophy {
-  font-size: 3.6rem;
-  margin-bottom: 10px;
-}
-
 .gameover-header h1 {
   font-size: clamp(2rem, 5vw, 3rem);
   font-weight: 900;
@@ -1404,12 +1399,6 @@ input {
   border-color: var(--accent-border);
 }
 
-.skyjo-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
 .skyjo-drawn-card {
   position: relative;
   display: grid;
@@ -1635,18 +1624,9 @@ input {
   z-index: 1;
 }
 
-.bizu-rule-note {
-  padding: 12px 14px;
-  font-size: 0.9rem;
-}
-
 .bizu-game-screen {
   width: min(100%, 980px);
   gap: 16px;
-}
-
-.bizu-scoreboard {
-  padding-inline: 110px;
 }
 
 .bizu-table {
@@ -2207,12 +2187,7 @@ input {
     padding-inline: 0;
   }
 
-  .bizu-scoreboard {
-    padding-inline: 0;
-  }
-
   .skyjo-table,
-  .skyjo-actions,
   .bizu-table,
   .bizu-rule-grid {
     grid-template-columns: 1fr;
@@ -2383,10 +2358,6 @@ input {
   width: min(100%, 1180px);
   gap: 16px;
   padding-bottom: 18px;
-}
-
-.uno-scoreboard {
-  padding-inline: 110px;
 }
 
 .score-chip.current {
@@ -2574,17 +2545,6 @@ button.uno-pile {
     0 24px 40px rgba(0, 0, 0, 0.28);
 }
 
-.uno-turn-panel {
-  width: min(100%, 640px);
-  padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
-  display: grid;
-  gap: 12px;
-}
-
 .uno-color-picker {
   display: flex;
   justify-content: center;
@@ -2636,10 +2596,6 @@ button.uno-pile {
 }
 
 @media (max-width: 720px) {
-  .uno-scoreboard {
-    padding-inline: 0;
-  }
-
   .uno-piles {
     width: min(100%, 360px);
   }
@@ -2709,37 +2665,6 @@ button.uno-pile {
   align-items: center;
   padding: 8px 6px 4px;
   overflow-x: auto;
-}
-
-.uno-played-stack-card {
-  position: relative;
-  flex: 0 0 48px;
-  display: grid;
-  justify-items: center;
-  transform: translateY(-4px) rotate(calc((var(--stack-index) - 1) * 3deg));
-  z-index: calc(10 + var(--stack-index));
-}
-
-.uno-played-stack-card .uno-card {
-  width: 62px;
-}
-
-.uno-played-stack-card span {
-  position: absolute;
-  right: -7px;
-  top: -8px;
-  z-index: 5;
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  background: var(--surface-strong);
-  color: var(--heading);
-  border: 1px solid var(--line-strong);
-  box-shadow: var(--shadow-sm);
-  font-size: 0.72rem;
-  font-weight: 950;
 }
 
 @media (max-width: 720px) {
@@ -2812,7 +2737,6 @@ button.uno-pile {
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-
 
 .skyjo-final-turn-alert {
   width: min(100%, 680px);

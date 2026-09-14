@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { socket } from "../../../shared/socket";
 
-// Import des images de cartes Skyjo
 import skyjoBack from "../assets/skyjo_back.png";
 import skyjoNeg1 from "../assets/skyjo_neg1.png";
 import skyjoNeg2 from "../assets/skyjo_neg2.png";
@@ -398,10 +397,15 @@ export default function Game({ room, myId, onLeave }) {
       )}
 
       {room.closerId && !isRoundOver && (
-        <div className="skyjo-final-turn-alert" role="status" aria-live="polite">
+        <div
+          className="skyjo-final-turn-alert"
+          role="status"
+          aria-live="polite"
+        >
           <strong>Dernier tour</strong>
           <span>
-            {players.find((player) => player.id === room.closerId)?.name} a retourne sa derniere carte. Les autres joueurs terminent leur tour.
+            {players.find((player) => player.id === room.closerId)?.name} a
+            retourne sa derniere carte. Les autres joueurs terminent leur tour.
           </span>
         </div>
       )}

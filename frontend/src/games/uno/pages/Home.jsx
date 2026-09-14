@@ -84,15 +84,7 @@ export default function Home({ gameId = "uno", onJoined, onBackToHub }) {
       )}
 
       <div className="home-header uno-home-header">
-        {/* <div className="uno-logo-mark" aria-hidden="true">
-          <span>U</span>
-          <span>N</span>
-          <span>O</span>
-        </div> */}
         <img className="home-logo" src={activeLogo} alt={activeLogoAlt} />
-        {/* <h1 className="home-title">
-          <span className="home-title-text">UNO</span>
-        </h1> */}
         <br />
         <p className="home-subtitle">
           Choisis une version, sois le premier a te débarasser de toutes tes
